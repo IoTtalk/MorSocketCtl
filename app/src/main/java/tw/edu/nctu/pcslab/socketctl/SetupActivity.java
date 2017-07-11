@@ -1,4 +1,4 @@
-package edu.nctu.pcslab.socketctl;
+package tw.edu.nctu.pcslab.socketctl;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
