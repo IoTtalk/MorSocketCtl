@@ -12,7 +12,10 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -20,12 +23,16 @@ import java.util.ArrayList;
 
 public class SetupActivity extends AppCompatActivity {
 
-    private final String deviceName = "MorSensor";
+    private final String bleDeviceName = "MorSensor";
+
+    /* scan BLE devices */
     private BluetoothManager btm;
     private BluetoothAdapter bta;
     private BluetoothLeScanner bts;
     private ArrayList<String> foundDevices;
-    private ArrayAdapter<String> devicesListAdapter;
+    private ArrayAdapter<String> bleListAdapter;
+    private ArrayList<Integer> bleCheckedList;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,14 +56,30 @@ public class SetupActivity extends AppCompatActivity {
         }
         ListView bleListView = (ListView) findViewById(R.id.ble_list_view);
         foundDevices = new ArrayList<String>();
-        devicesListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.ble_row_view, R.id.ble_row_checked_text_view, foundDevices);
-        bleListView.setAdapter(devicesListAdapter);
+        bleListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.ble_row_view, R.id.ble_row_checked_text_view, foundDevices);
+        bleCheckedList = new ArrayList<Integer>();
+        bleListView.setAdapter(bleListAdapter);
+
+        // click listener for bleListView item
+        bleListView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                CheckedTextView chkItem = (CheckedTextView) v.findViewById(R.id.ble_row_checked_text_view);
+                chkItem.setChecked(!chkItem.isChecked());
+                Toast.makeText(getBaseContext(), "您點選了第 "+(position+1)+" 項", Toast.LENGTH_SHORT).show();
+                // add checked position to bleCheckedList
+                if(chkItem.isChecked() && (!bleCheckedList.contains(position)))
+                    bleCheckedList.add(position);
+                // remove unchecked position from bleCheckedList
+                else if((!chkItem.isChecked()) && bleCheckedList.contains(position))
+                    bleCheckedList.remove(Integer.valueOf(position));
+            }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // open mobile phone directly, do not ask
+        // open bluetooth directly, do not ask
         if(!bta.isEnabled()){
             bta.enable();
         }
@@ -68,7 +91,7 @@ public class SetupActivity extends AppCompatActivity {
             ScanSettings.Builder settingsBuilder = new ScanSettings.Builder();
             ScanFilter.Builder filterBuilder = new ScanFilter.Builder();
             ArrayList<ScanFilter> filters = new ArrayList<ScanFilter>();
-            ScanFilter filter = filterBuilder.setDeviceName(deviceName).build();
+            ScanFilter filter = filterBuilder.setDeviceName(bleDeviceName).build();
             filters.add(filter);
             bts.startScan(filters, settingsBuilder.build(), startScanCallback);
         }
@@ -96,8 +119,8 @@ public class SetupActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     Log.d("ble_device", info);
-                    devicesListAdapter.add(info);
-                    devicesListAdapter.notifyDataSetChanged();
+                    bleListAdapter.add(info);
+                    bleListAdapter.notifyDataSetChanged();
                 }
             });
         }
