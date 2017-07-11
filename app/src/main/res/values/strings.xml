@@ -1,0 +1,16 @@
+<resources>
+    <!--app name-->
+    <string name="app_name">SocketCtl</string>
+
+    <!--activity label-->
+    <string name="activity_controller_label">Controller</string>
+    <string name="activity_setup_label">Setup</string>
+
+    <!--menu action title-->
+    <string name="action_setup_title">Setup</string>
+
+    <!--setup activity-->
+    <string name="no_sup_ble">Bluetooth not support</string>
+    <string name="scan_failed">BLE scan failed</string>
+
+</resources>
