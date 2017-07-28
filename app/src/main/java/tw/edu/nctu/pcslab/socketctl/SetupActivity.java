@@ -185,7 +185,7 @@ public class SetupActivity extends AppCompatActivity {
                 currentStep = 0;
                 gattServiceIntent = new Intent(SetupActivity.this, BluetoothLeService.class);
                 SetupActivity.this.bindService(gattServiceIntent, bleServiceConnection, BIND_AUTO_CREATE);
-                setupButtonToggle();
+                setupButtonToggle(false);
             }
         });
 
@@ -200,10 +200,10 @@ public class SetupActivity extends AppCompatActivity {
         ssid = null;
 
     }
-    private void setupButtonToggle(){
+    private void setupButtonToggle(Boolean enable){
         Button setupBtn = (Button) findViewById(R.id.setup_btn);
         ViewGroup bleListView = (ViewGroup) findViewById(R.id.ble_list_view);
-        if(setupBtn.isEnabled()){
+        if(!enable){
             for(int index=0; index< bleListView.getChildCount(); ++index) {
                 View nextChild = bleListView.getChildAt(index);
                 nextChild.findViewById(R.id.setup_status).setVisibility(View.INVISIBLE);
@@ -391,7 +391,7 @@ public class SetupActivity extends AppCompatActivity {
                 Log.d(TAG, "ACTION_GATT_CONNECTED");
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 invalidateOptionsMenu();
-                setupButtonToggle();
+                setupButtonToggle(true);
                 Log.d(TAG, "ACTION_GATT_DISCONNECTED");
             } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Show all the supported services and characteristics on the user interface.
@@ -418,7 +418,7 @@ public class SetupActivity extends AppCompatActivity {
                         if(!mDeviceData.startsWith("02")) {
                             Log.d(TAG, "Step0 error!");
                             showSetupStatus(getString(R.string.unknown_error), false);
-                            setupButtonToggle();
+                            setupButtonToggle(true);
                             return;
                         }
                         break;
@@ -426,7 +426,7 @@ public class SetupActivity extends AppCompatActivity {
                         if(!mDeviceData.startsWith("41")) {
                             Log.d(TAG, "Step1 error!");
                             showSetupStatus(getString(R.string.unknown_error), false);
-                            setupButtonToggle();
+                            setupButtonToggle(true);
                             return;
                         }
                         break;
@@ -434,7 +434,7 @@ public class SetupActivity extends AppCompatActivity {
                         if(!mDeviceData.startsWith("42")) {
                             Log.d(TAG, "Step2 error!");
                             showSetupStatus(getString(R.string.unknown_error), false);
-                            setupButtonToggle();
+                            setupButtonToggle(true);
                             return;
                         }
                         break;
@@ -442,7 +442,7 @@ public class SetupActivity extends AppCompatActivity {
                         if(!mDeviceData.startsWith("43")) {
                             Log.d(TAG, "Step3 error!");
                             showSetupStatus(getString(R.string.incorrect_ap_pwd), false);
-                            setupButtonToggle();
+                            setupButtonToggle(true);
                             return;
                         }
                         break;
@@ -450,14 +450,14 @@ public class SetupActivity extends AppCompatActivity {
                         if(!mDeviceData.startsWith("44")) {
                             Log.d(TAG, "Step4 error!");
                             showSetupStatus(getString(R.string.unknown_error), false);
-                            setupButtonToggle();
+                            setupButtonToggle(true);
                             return;
                         }
                         else{
                             Log.d(TAG, "Setup success!");
                             showSetupStatus(getString(R.string.setup_success), true);
                         }
-                        setupButtonToggle();
+                        setupButtonToggle(true);
                         return;
                 }
                 setupHandler.postDelayed(new Runnable() {
