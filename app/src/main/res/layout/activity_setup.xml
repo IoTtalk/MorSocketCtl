@@ -1,72 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent" android:layout_height="match_parent"
+    android:scrollbars="vertical">
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:weightSum="1"
     android:layout_marginLeft="2dp"
     android:layout_marginRight="2dp" >
+        <TextView
+            android:text="@string/select_morsockets_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/morsocket_label"
+            android:textSize="20sp"
+            android:textColor="@color/colorAccent" />
 
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="177dp"
+            android:id="@+id/ble_list_view"
+            android:background="@drawable/setup_border" />
 
-    <TextView
-        android:text="@string/select_morsockets_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/morsocket_label"
-        android:textSize="20sp"
-        android:textColor="@color/colorAccent" />
+        <TextView
+            android:text="@string/select_ap_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/ap_label"
+            android:textColor="@color/colorAccent"
+            android:textSize="20sp"
+            android:layout_marginTop="5dp" />
 
-    <ListView
-        android:layout_width="match_parent"
-        android:layout_height="177dp"
-        android:id="@+id/ble_list_view"
-        android:background="@drawable/setup_border" />
+        <Spinner
+            android:layout_width="222dp"
+            android:id="@+id/ap_list_spinner"
+            android:spinnerMode="dialog"
+            android:layout_height="30dp"
+            android:background="@drawable/setup_border"
+            android:gravity="center" />
 
-    <TextView
-        android:text="@string/select_ap_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/ap_label"
-        android:textColor="@color/colorAccent"
-        android:textSize="20sp"
-        android:layout_marginTop="5dp" />
+        <TextView
+            android:text="@string/enter_ap_pwd_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/ap_pwd_label"
+            android:textSize="20sp"
+            android:textColor="@color/colorAccent"
+            android:layout_marginTop="5dp" />
 
-    <Spinner
-        android:layout_width="222dp"
-        android:id="@+id/ap_list_spinner"
-        android:spinnerMode="dialog"
-        android:layout_weight="0.19"
-        android:layout_height="1dp"
-        android:background="@drawable/setup_border"
-        android:gravity="center" />
+        <EditText
+            android:layout_height="30dp"
+            android:inputType="textPassword"
+            android:ems="10"
+            android:id="@+id/ap_pwd_editText"
+            android:layout_width="222dp"
+            android:textSize="20sp"
+            android:background="@drawable/setup_border"
+            android:textAlignment="viewStart"
+            android:layout_weight="1.30" />
 
-    <TextView
-        android:text="@string/enter_ap_pwd_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/ap_pwd_label"
-        android:textSize="20sp"
-        android:textColor="@color/colorAccent"
-        android:layout_marginTop="5dp" />
-
-    <EditText
-        android:layout_height="1dp"
-        android:inputType="textPassword"
-        android:ems="10"
-        android:id="@+id/ap_pwd_editText"
-        android:layout_weight="0.20"
-        android:layout_width="222dp"
-        android:textSize="20sp"
-        android:background="@drawable/setup_border"
-        android:textAlignment="viewStart" />
-
-    <Button
-        android:layout_width="219dp"
-        android:layout_height="wrap_content"
-        android:id="@+id/setup_btn"
-        android:text="@string/start_setup"
-        android:elevation="0dp"
-        android:textColor="@android:color/background_light"
-        android:background="@color/colorAccent"
-        android:layout_marginTop="5dp" />
+        <Button
+            android:layout_width="219dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/setup_btn"
+            android:text="@string/start_setup"
+            android:elevation="0dp"
+            android:textColor="@android:color/background_light"
+            android:background="@color/colorAccent"
+            android:layout_marginTop="5dp" />
 
 </LinearLayout>
+</ScrollView>

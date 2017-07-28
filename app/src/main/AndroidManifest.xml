@@ -28,7 +28,8 @@
         <activity
             android:name="tw.edu.nctu.pcslab.socketctl.SetupActivity"
             android:parentActivityName="tw.edu.nctu.pcslab.socketctl.ControllerActivity"
-            android:label="@string/activity_setup_label">
+            android:label="@string/activity_setup_label"
+            android:windowSoftInputMode="adjustResize" >
         </activity>
     </application>
 
