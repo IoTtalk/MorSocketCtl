@@ -108,14 +108,14 @@ public class SetupActivity extends AppCompatActivity {
         }
         ListView bleListView = (ListView) findViewById(R.id.ble_list_view);
         foundDevices = new ArrayList<String>();
-        bleListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.ble_row_view, R.id.ble_row_checked_text_view, foundDevices);
+        bleListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.ble_row_view, R.id.socket_row_text_view, foundDevices);
         bleCheckedList = new ArrayList<Integer>();
         bleListView.setAdapter(bleListAdapter);
 
         // click listener for bleListView item
         bleListView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                CheckedTextView chkItem = (CheckedTextView) v.findViewById(R.id.ble_row_checked_text_view);
+                CheckedTextView chkItem = (CheckedTextView) v.findViewById(R.id.socket_row_text_view);
                 chkItem.setChecked(!chkItem.isChecked());
                 Button setupBtn = (Button) findViewById(R.id.setup_btn);
                 if(!setupBtn.isEnabled()){
@@ -371,6 +371,9 @@ public class SetupActivity extends AppCompatActivity {
             res = sendCommand(rawCommand);
             iteration++;
         }while(!res && iteration < iterationLimit);
+        if(!res){
+            setupButtonToggle(true);
+        }
         Log.d(TAG, "SendCommand" + step + ":" + res + " "+ rawCommand[0]);
     }
     private void showSetupStatus(String message, boolean success) {

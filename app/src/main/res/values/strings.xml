@@ -24,4 +24,15 @@
     <string name="incorrect_ap_pwd">Incorrect AP password</string>
     <string name="unknown_error">Unknown error</string>
     <string name="setup_success">Setup Success</string>
+
+    <!--controller activity-->
+    <string-array name="appliances">
+        <item>Fan</item>
+        <item>TV</item>
+        <item>Oven</item>
+        <item>refrigerator</item>
+        <item>microwave</item>
+        <item>Others</item>
+    </string-array>
+
 </resources>

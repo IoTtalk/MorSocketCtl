@@ -22,7 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="177dp"
             android:id="@+id/ble_list_view"
-            android:background="@drawable/setup_border" />
+            android:background="@drawable/border" />
 
         <TextView
             android:text="@string/select_ap_label"
@@ -38,7 +38,7 @@
             android:id="@+id/ap_list_spinner"
             android:spinnerMode="dialog"
             android:layout_height="30dp"
-            android:background="@drawable/setup_border"
+            android:background="@drawable/border"
             android:gravity="center" />
 
         <TextView
@@ -57,7 +57,7 @@
             android:id="@+id/ap_pwd_editText"
             android:layout_width="222dp"
             android:textSize="20sp"
-            android:background="@drawable/setup_border"
+            android:background="@drawable/border"
             android:textAlignment="viewStart"
             android:layout_weight="1.30" />
 

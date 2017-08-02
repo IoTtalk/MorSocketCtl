@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="55dp"
         android:checkMark="?android:attr/listChoiceIndicatorMultiple"
-        android:id="@+id/ble_row_checked_text_view"
+        android:id="@+id/socket_row_text_view"
         android:gravity="center" />
 
     <ProgressBar
@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="35dp"
         android:id="@+id/progressBar"
-        android:layout_alignBottom="@+id/ble_row_checked_text_view"
+        android:layout_alignBottom="@+id/socket_row_text_view"
         android:layout_alignParentEnd="true"
         android:visibility="invisible" />
 

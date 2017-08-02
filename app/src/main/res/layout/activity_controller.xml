@@ -8,11 +8,24 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.example.kuan.socketctl.edu.example.kuan.socketctl.ControllerActivity">
+    tools:context="tw.edu.nctu.pcslab.socketctl.ControllerActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <Spinner
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:layout_marginTop="19dp"
+        android:id="@+id/device_list_spinner"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:spinnerMode="dropdown"
+        android:background="@drawable/border" />
+
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/device_list_spinner"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="104dp"
+        android:id="@+id/socket_list_view" />
 
 </RelativeLayout>
