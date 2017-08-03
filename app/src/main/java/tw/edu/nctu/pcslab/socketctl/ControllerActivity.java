@@ -52,7 +52,7 @@ public class ControllerActivity extends AppCompatActivity {
     private HandlerThread getSocketListThread;
 
     /*RESTful URL*/
-    private String urlString = "http://192.168.1.232:8899";
+    private String urlString = "http://192.168.0.102:8899";
     private String deviceListAPI = "device_list";
     private String socketListAPI = "socket_list";
 
@@ -127,16 +127,15 @@ public class ControllerActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
+        //update device list
+        getDeviceListHander.post(new Runnable() {
+            @Override
+            public void run() {
+                getDeviceList();
+                getDeviceListHander.postDelayed(this, 1000);
+            }
+        });
         if(currentDevice != null) {
-            //update device list
-            getDeviceListHander.post(new Runnable() {
-                @Override
-                public void run() {
-                    getDeviceList();
-                    getDeviceListHander.postDelayed(this, 1000);
-                }
-            });
             //update socket list
             getSocketListHander.post(new Runnable() {
                 @Override
@@ -151,7 +150,6 @@ public class ControllerActivity extends AppCompatActivity {
     @Override
     protected void onPause(){
         super.onPause();
-        Log.d(TAG, "pause");
         getDeviceListHander.removeCallbacksAndMessages(null);
         getSocketListHander.removeCallbacksAndMessages(null);
     }
