@@ -10,22 +10,30 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="tw.edu.nctu.pcslab.socketctl.ControllerActivity">
 
-    <Spinner
-        android:layout_width="match_parent"
+    <TextView
+        android:text="MorSocket:"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="19dp"
-        android:id="@+id/device_list_spinner"
-        android:layout_alignParentTop="true"
+        android:id="@+id/textView"
         android:layout_alignParentStart="true"
-        android:spinnerMode="dropdown"
-        android:background="@drawable/border" />
+        android:textColor="@android:color/black" />
 
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:id="@+id/socket_list_view"
+        android:layout_marginTop="25dp"
         android:layout_below="@+id/device_list_spinner"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="104dp"
-        android:id="@+id/socket_list_view" />
+        android:layout_alignParentStart="true" />
+
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/device_list_spinner"
+        android:spinnerMode="dropdown"
+        android:background="@drawable/border"
+        android:layout_alignBottom="@+id/textView"
+        android:layout_toEndOf="@+id/textView"
+        android:layout_marginStart="30dp" />
 
 </RelativeLayout>

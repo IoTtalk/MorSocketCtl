@@ -452,7 +452,7 @@ public class SetupActivity extends AppCompatActivity {
                     case 4: //0x44_OC
                         if(!mDeviceData.startsWith("44")) {
                             Log.d(TAG, "Step4 error!");
-                            showSetupStatus(getString(R.string.unknown_error), false);
+                            showSetupStatus(getString(R.string.server_error), false);
                             setupButtonToggle(true);
                             return;
                         }
