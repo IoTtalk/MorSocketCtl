@@ -55,9 +55,11 @@ public class ControllerActivity extends AppCompatActivity {
     MqttAndroidClient mqttClient;
     private String mqttUri = "tcp://192.168.11.103:1883";
     private String clientId = "MorSocketAndroidClient";
-    private String subscriptionTopic = "DeviceInfo";
-    //private String publishTopic = "exampleAndroidPublishTopic";
-    //private String publishMessage = "Hello World!";
+    // subscribe
+    private String deviceInfoTopic = "DeviceInfo";
+    private String devicesInfoTopic = "DevicesInfo";
+    // publish
+    private String syncDeviceInfoTopic = "SyncDeviceInfo";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,7 +115,9 @@ public class ControllerActivity extends AppCompatActivity {
                     //addToHistory("Reconnected to : " + serverURI);
                     Log.d(TAG, "Reconnected to : " + serverURI);
                     // Because Clean Session is true, we need to re-subscribe
-                    subscribeToTopic();
+                    subscribeToTopic(deviceInfoTopic);
+                    subscribeToTopic(devicesInfoTopic);
+                    publishMessage(syncDeviceInfoTopic);
                 } else {
                     //addToHistory("Connected to: " + serverURI);
                     Log.d(TAG, "Connected to : " + serverURI);
@@ -122,14 +126,12 @@ public class ControllerActivity extends AppCompatActivity {
 
             @Override
             public void connectionLost(Throwable cause) {
-                //addToHistory("The Connection was lost.");
                 Log.d(TAG, cause.toString());
                 Log.d(TAG, "The Connection was lost.");
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                //addToHistory("Incoming message: " + new String(message.getPayload()));
                 Log.d(TAG, "Incoming message: " + new String(message.getPayload()));
 
             }
@@ -154,7 +156,10 @@ public class ControllerActivity extends AppCompatActivity {
                     disconnectedBufferOptions.setPersistBuffer(false);
                     disconnectedBufferOptions.setDeleteOldestMessages(false);
                     mqttClient.setBufferOpts(disconnectedBufferOptions);
-                    subscribeToTopic();
+                    subscribeToTopic(deviceInfoTopic);
+                    subscribeToTopic(devicesInfoTopic);
+                    publishMessage(syncDeviceInfoTopic);
+
                 }
 
                 @Override
@@ -170,44 +175,28 @@ public class ControllerActivity extends AppCompatActivity {
         }
 
     }
-
-    public void subscribeToTopic(){
+    public void subscribeToTopic(String subscriptionTopic){
         try {
             mqttClient.subscribe(subscriptionTopic, 0, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-                    //addToHistory("Subscribed!");
+                    Log.d(TAG, "subscribe success");
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    //addToHistory("Failed to subscribe");
+                    Log.d(TAG, "subscribe failed");
                 }
             });
             mqttClient.subscribe(subscriptionTopic, 0, new IMqttMessageListener() {
                 @Override
                 public void messageArrived(String topic, MqttMessage message) throws Exception {
-                    // message Arrived!
                     Log.d(TAG, "Message: " + topic + " : " + new String(message.getPayload()));
-                    String jsonString = new String(message.getPayload());
-                    JSONObject jsonObj = new JSONObject(jsonString);
-                    Log.d(TAG, jsonString);
-                    String device = jsonObj.getString("id");
-                    ArrayList<String> listData = new ArrayList<String>();
-                    JSONArray sockets = jsonObj.getJSONArray("sockets");
-                    if (sockets != null) {
-                        for (int i = 0; i < sockets.length(); i++)
-                            listData.add(sockets.getString(i));
+                    if(topic.equals(deviceInfoTopic)) {
+                        parseDeviceInfo(message);
                     }
-                    deviceLinkedHashMap.put(device, listData);
-                    if(!deviceList.contains(device)) {
-                        deviceList.add(device);
-                        new Handler(Looper.getMainLooper()).post(new Runnable () {
-                            @Override
-                            public void run () {
-                                deviceListAdapter.notifyDataSetChanged();
-                            }
-                        });
+                    else if(topic.equals(devicesInfoTopic)) {
+                        parseDevicesInfo(message);
                     }
                 }
             });
@@ -215,6 +204,71 @@ public class ControllerActivity extends AppCompatActivity {
         } catch (MqttException ex){
             Log.d(TAG, "Exception whilst subscribing");
             ex.printStackTrace();
+        }
+    }
+    private void parseDeviceInfo(MqttMessage message) throws Exception{
+        String jsonString = new String(message.getPayload());
+        JSONObject jsonObj = new JSONObject(jsonString);
+        Log.d(TAG, jsonString);
+        String device = jsonObj.getString("id");
+        ArrayList<String> listData = new ArrayList<String>();
+        JSONArray sockets = jsonObj.getJSONArray("sockets");
+        if (sockets != null) {
+            for (int i = 0; i < sockets.length(); i++)
+                listData.add(sockets.getString(i));
+        }
+        deviceLinkedHashMap.put(device, listData);
+        if (!deviceList.contains(device)) {
+            deviceList.add(device);
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    deviceListAdapter.notifyDataSetChanged();
+                }
+            });
+        }
+    }
+    private void parseDeviceInfo(JSONObject jsonObj) throws Exception{
+        String device = jsonObj.getString("id");
+        ArrayList<String> listData = new ArrayList<String>();
+        JSONArray sockets = jsonObj.getJSONArray("sockets");
+        if (sockets != null) {
+            for (int i = 0; i < sockets.length(); i++)
+                listData.add(sockets.getString(i));
+        }
+        deviceLinkedHashMap.put(device, listData);
+        if (!deviceList.contains(device)) {
+            deviceList.add(device);
+        }
+    }
+    private void parseDevicesInfo(MqttMessage message) throws Exception{
+        String jsonString = new String(message.getPayload());
+        JSONObject jsonObj = new JSONObject(jsonString);
+        Log.d(TAG, jsonString);
+        JSONArray devices = jsonObj.getJSONArray("devices");
+        for(int i = 0; i < devices.length(); i++){
+            JSONObject deviceObj = devices.getJSONObject(i);
+            parseDeviceInfo(deviceObj);
+        }
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                deviceListAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+    public void publishMessage(String publishTopic){
+        try {
+            MqttMessage message = new MqttMessage();
+            message.setPayload("synchronize".getBytes());
+            mqttClient.publish(publishTopic, message);
+            Log.d(TAG, "Message Published");
+            if(!mqttClient.isConnected()){
+                Log.d(TAG, mqttClient.getBufferedMessageCount() + " messages in buffer.");
+            }
+        } catch (MqttException e) {
+            System.err.println("Error Publishing: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     @Override
@@ -239,7 +293,10 @@ public class ControllerActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
+        // synchronize devices information.
+        if(mqttClient.isConnected()) {
+            publishMessage(syncDeviceInfoTopic);
+        }
     }
 
     @Override
