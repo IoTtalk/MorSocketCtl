@@ -30,7 +30,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/device_list_spinner"
-        android:spinnerMode="dropdown"
+        android:spinnerMode="dialog"
         android:background="@drawable/border2"
         android:layout_alignBottom="@+id/textView"
         android:layout_toEndOf="@+id/textView"
