@@ -2,7 +2,6 @@ package tw.edu.nctu.pcslab.socketctl;
 
 import android.content.Intent;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,7 +14,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
-import android.widget.Toast;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
@@ -29,42 +27,29 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class ControllerActivity extends AppCompatActivity {
 
     private final String TAG = "ControllerActivity";
 
-    /* device list */
+    /* device list for ui */
     private ArrayList<String> deviceList;
     private ArrayAdapter<String> deviceListAdapter;
     private String currentDevice;
 
-    /* socket list */
+    /* socket list for ui */
     private ArrayList<String> socketList;
     private ArrayAdapter<String> socketListAdapter;
+
+    /* device and socket list relation */
+    private LinkedHashMap<String, ArrayList<String>> deviceLinkedHashMap;
 
     /* appliance list */
     private List<String> applianceList;
     private ArrayAdapter<String> applianceListAdapter;
-
-    /* handler */
-    private Handler getDeviceListHander;
-    private HandlerThread getDeviceListThread;
-    private Handler getSocketListHander;
-    private HandlerThread getSocketListThread;
-
-    /*RESTful URL*/
-    private String urlString = "http://192.168.11.103:8899";
-    private String deviceListAPI = "device_list";
-    private String socketListAPI = "socket_list";
 
     /*Mqtt client*/
     MqttAndroidClient mqttClient;
@@ -80,7 +65,7 @@ public class ControllerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_controller);
 
         currentDevice = null;
-
+        deviceLinkedHashMap = new LinkedHashMap<String, ArrayList<String>>();
         //UI
         Spinner deviceListSpinner = (Spinner) findViewById(R.id.device_list_spinner);
         deviceList = new ArrayList<String>();
@@ -98,24 +83,21 @@ public class ControllerActivity extends AppCompatActivity {
         applianceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.appliance_row_view, R.id.appliance_row_text_view, applianceList);
         appliancesListSpinner.setAdapter(applianceListAdapter);*/
 
-        //Handler
-        getDeviceListThread = new HandlerThread("getDeviceListThread");
-        getDeviceListThread.start();
-        getDeviceListHander = new Handler(getDeviceListThread.getLooper());
-
-        getSocketListThread = new HandlerThread("getSocketListThread");
-        getSocketListThread.start();
-        getSocketListHander = new Handler(getDeviceListThread.getLooper());
-
         // click listener for deviceListSpinner
         deviceListSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
                 Object item = adapterView.getItemAtPosition(position);
-                if (!(item.toString() == getString(R.string.select_morsocket_placeholder)))
+                if (!(item.toString() == getString(R.string.select_morsocket_placeholder))) {
                     currentDevice = item.toString();
+                    ArrayList<String> sl = new ArrayList<String>(deviceLinkedHashMap.get(currentDevice));
+                    socketList.clear();
+                    for(int i = 0; i < sl.size(); i++)
+                        socketList.add(sl.get(i));
+                    Log.d(TAG, socketList.toString());
+                    socketListAdapter.notifyDataSetChanged();
+                }
             }
-
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
             }
@@ -141,6 +123,7 @@ public class ControllerActivity extends AppCompatActivity {
             @Override
             public void connectionLost(Throwable cause) {
                 //addToHistory("The Connection was lost.");
+                Log.d(TAG, cause.toString());
                 Log.d(TAG, "The Connection was lost.");
             }
 
@@ -201,13 +184,31 @@ public class ControllerActivity extends AppCompatActivity {
                     //addToHistory("Failed to subscribe");
                 }
             });
-
-            // THIS DOES NOT WORK!
             mqttClient.subscribe(subscriptionTopic, 0, new IMqttMessageListener() {
                 @Override
                 public void messageArrived(String topic, MqttMessage message) throws Exception {
                     // message Arrived!
                     Log.d(TAG, "Message: " + topic + " : " + new String(message.getPayload()));
+                    String jsonString = new String(message.getPayload());
+                    JSONObject jsonObj = new JSONObject(jsonString);
+                    Log.d(TAG, jsonString);
+                    String device = jsonObj.getString("id");
+                    ArrayList<String> listData = new ArrayList<String>();
+                    JSONArray sockets = jsonObj.getJSONArray("sockets");
+                    if (sockets != null) {
+                        for (int i = 0; i < sockets.length(); i++)
+                            listData.add(sockets.getString(i));
+                    }
+                    deviceLinkedHashMap.put(device, listData);
+                    if(!deviceList.contains(device)) {
+                        deviceList.add(device);
+                        new Handler(Looper.getMainLooper()).post(new Runnable () {
+                            @Override
+                            public void run () {
+                                deviceListAdapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
                 }
             });
 
@@ -238,167 +239,17 @@ public class ControllerActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        //update device list
-        /*getDeviceListHander.post(new Runnable() {
-            @Override
-            public void run() {
-                getDeviceList();
-                getDeviceListHander.postDelayed(this, 5000);
-            }
-        });
-        //update socket list
-        getSocketListHander.post(new Runnable() {
-            @Override
-            public void run() {
-                if(currentDevice != null) {
-                    getSocketList();
-                }
-                getSocketListHander.postDelayed(this, 1000);
-            }
-        });*/
 
     }
 
     @Override
     protected void onPause(){
         super.onPause();
-        getDeviceListHander.removeCallbacksAndMessages(null);
-        getSocketListHander.removeCallbacksAndMessages(null);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        getDeviceListHander.removeCallbacksAndMessages(null);
-        getSocketListHander.removeCallbacksAndMessages(null);
-        getDeviceListThread.quit();
-        getSocketListThread.quit();
-    }
-
-    void getDeviceList(){
-        HttpURLConnection conn = null;
-        try {
-            if (Thread.interrupted()) {
-                throw new InterruptedException();
-            }
-            URL url = new URL(urlString + "/" + deviceListAPI);
-            Log.d(TAG, urlString + "/" + deviceListAPI);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.connect();
-            if (Thread.interrupted()) {
-                throw new InterruptedException();
-            }
-            BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    conn.getInputStream(), "UTF-8"));
-            String jsonString1 = reader.readLine();
-            reader.close();
-            // parse json
-            String jsonString = jsonString1;
-            JSONObject jsonObj = new JSONObject(jsonString);
-            JSONArray devices = jsonObj.getJSONArray("devices");
-            //loop to get all json objects from devices json array
-            if(devices.length() != 0) {
-                deviceList.clear();
-                for (int i = 0; i < devices.length(); i++) {
-                    String device = devices.getString(i);
-                    deviceList.add(device);
-                }
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        deviceListAdapter.notifyDataSetChanged();
-                    }
-                });
-            }
-            if(currentDevice != null && !deviceList.contains(currentDevice)){
-                Toast.makeText(getBaseContext(), R.string.device_disconnected, Toast.LENGTH_SHORT).show();
-            }
-            Log.d(TAG, jsonObj.get("devices").toString());
-        }
-        catch (ConnectException ce){
-            deviceList.clear();
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    deviceListAdapter.notifyDataSetChanged();
-                }
-            });
-            Toast.makeText(getBaseContext(), R.string.server_error, Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "Error: " + ce);
-        }
-        catch (Exception e) {
-            Log.d(TAG, "Error: " + e);
-        }
-        finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
-        }
-    }
-
-    void getSocketList(){
-        HttpURLConnection conn = null;
-        try {
-            if (Thread.interrupted()) {
-                throw new InterruptedException();
-            }
-            URL url = new URL(urlString + "/" + socketListAPI + "/" + currentDevice);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.connect();
-            if (Thread.interrupted()) {
-                throw new InterruptedException();
-            }
-            BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    conn.getInputStream(), "UTF-8"));
-            String jsonString = reader.readLine();
-            reader.close();
-            // parse json
-            JSONObject jsonObj = new JSONObject(jsonString);
-            Log.d(TAG, jsonString);
-            JSONArray sockets = jsonObj.getJSONArray("sockets");
-            // loop to get all json objects from devices json array
-            for(int i = 0; i < sockets.length(); i++) {
-                String socket = sockets.getString(i);
-                if(socket.length() == 1){
-                    socket = "0" + socket;
-                }
-                if(!socketList.contains(socket)){
-                    socketList.add(socket);
-                    new Handler(Looper.getMainLooper()).post(new Runnable () {
-                        @Override
-                        public void run () {
-                            socketListAdapter.notifyDataSetChanged();
-                        }
-                    });
-                }
-            }
-            Log.d(TAG, jsonObj.get("sockets").toString());
-        }
-        catch (ConnectException ce){
-            socketList.clear();
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    socketListAdapter.notifyDataSetChanged();
-                }
-            });
-            Toast.makeText(getBaseContext(), R.string.server_error, Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "Error: " + ce);
-        }
-        catch (Exception e) {
-            Log.d(TAG, "Error: " + e);
-        }
-        finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
-        }
     }
 
 }
