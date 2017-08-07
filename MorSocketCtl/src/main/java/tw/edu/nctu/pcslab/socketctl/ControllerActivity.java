@@ -10,10 +10,14 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.Switch;
+import android.widget.TextView;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
@@ -30,6 +34,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class ControllerActivity extends AppCompatActivity {
 
@@ -53,13 +58,14 @@ public class ControllerActivity extends AppCompatActivity {
 
     /*Mqtt client*/
     MqttAndroidClient mqttClient;
-    private String mqttUri = "tcp://192.168.11.103:1883";
+    private String mqttUri = "tcp://192.168.1.232:1883";
     private String clientId = "MorSocketAndroidClient";
     // subscribe
-    private String deviceInfoTopic = "DeviceInfo";
-    private String devicesInfoTopic = "DevicesInfo";
+    private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
+    private String devicesInfoTopic = "DevicesInfo"; // receive after SyncDeviceInfo
     // publish
-    private String syncDeviceInfoTopic = "SyncDeviceInfo";
+    private String syncDeviceInfoTopic = "SyncDeviceInfo"; // when app open
+    private String switchTopic = "Switch";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,10 +81,37 @@ public class ControllerActivity extends AppCompatActivity {
         deviceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.device_row_view, R.id.device_row_text_view, deviceList);
         deviceListSpinner.setAdapter(deviceListAdapter);
 
-        ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
+        final ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
         socketList = new ArrayList<String>();
         socketListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.socket_row_view, R.id.socket_row_text_view, socketList);
         socketListView.setAdapter(socketListAdapter);
+        socketListView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() { // rebind onCheckedChanged event after Layout has been changed
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                for(int i = 0; i < socketListView.getChildCount(); i++){
+                    Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
+                    TextView socketRowTextView = (TextView)socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
+                    final String index = socketRowTextView.getText().toString();
+                    sswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                            Log.d(TAG, "isChedcked:" + isChecked);
+                            JSONObject data = new JSONObject();
+                            try {
+                                data.put("id", currentDevice);
+                                data.put("index", index);
+                                data.put("state", isChecked);
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
+                            MqttMessage message = new MqttMessage();
+                            message.setPayload(data.toString().getBytes());
+                            publishMessage(switchTopic, message);
+                        }
+                    });
+                }
+            }
+        });
+
 
         /*Spinner appliancesListSpinner = (Spinner) findViewById(R.id.appliance_list_spinner);
         applianceList = Arrays.asList(getResources().getStringArray(R.array.appliances));
@@ -117,7 +150,9 @@ public class ControllerActivity extends AppCompatActivity {
                     // Because Clean Session is true, we need to re-subscribe
                     subscribeToTopic(deviceInfoTopic);
                     subscribeToTopic(devicesInfoTopic);
-                    publishMessage(syncDeviceInfoTopic);
+                    MqttMessage message = new MqttMessage();
+                    message.setPayload("synchronize".getBytes());
+                    publishMessage(syncDeviceInfoTopic, message);
                 } else {
                     //addToHistory("Connected to: " + serverURI);
                     Log.d(TAG, "Connected to : " + serverURI);
@@ -145,6 +180,8 @@ public class ControllerActivity extends AppCompatActivity {
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
+        mqttConnectOptions.setConnectionTimeout(10);
+        mqttConnectOptions.setKeepAliveInterval(3);
         try {
             //addToHistory("Connecting to " + serverUri);
             mqttClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
@@ -158,7 +195,9 @@ public class ControllerActivity extends AppCompatActivity {
                     mqttClient.setBufferOpts(disconnectedBufferOptions);
                     subscribeToTopic(deviceInfoTopic);
                     subscribeToTopic(devicesInfoTopic);
-                    publishMessage(syncDeviceInfoTopic);
+                    MqttMessage message = new MqttMessage();
+                    message.setPayload("synchronize".getBytes());
+                    publishMessage(syncDeviceInfoTopic, message);
 
                 }
 
@@ -257,17 +296,15 @@ public class ControllerActivity extends AppCompatActivity {
             }
         });
     }
-    public void publishMessage(String publishTopic){
+    public void publishMessage(String publishTopic, MqttMessage message){
         try {
-            MqttMessage message = new MqttMessage();
-            message.setPayload("synchronize".getBytes());
             mqttClient.publish(publishTopic, message);
             Log.d(TAG, "Message Published");
             if(!mqttClient.isConnected()){
                 Log.d(TAG, mqttClient.getBufferedMessageCount() + " messages in buffer.");
             }
         } catch (MqttException e) {
-            System.err.println("Error Publishing: " + e.getMessage());
+            Log.d(TAG, "Error Publishing: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -295,7 +332,9 @@ public class ControllerActivity extends AppCompatActivity {
         super.onResume();
         // synchronize devices information.
         if(mqttClient.isConnected()) {
-            publishMessage(syncDeviceInfoTopic);
+            MqttMessage message = new MqttMessage();
+            message.setPayload("synchronize".getBytes());
+            publishMessage(syncDeviceInfoTopic, message);
         }
     }
 
