@@ -249,8 +249,8 @@ public class ControllerActivity extends AppCompatActivity {
         String jsonString = new String(message.getPayload());
         JSONObject jsonObj = new JSONObject(jsonString);
         Log.d(TAG, jsonString);
-        String device = jsonObj.getString("id");
-        ArrayList<String> listData = new ArrayList<String>();
+        final String device = jsonObj.getString("id");
+        final ArrayList<String> listData = new ArrayList<String>();
         JSONArray sockets = jsonObj.getJSONArray("sockets");
         if (sockets != null) {
             for (int i = 0; i < sockets.length(); i++)
@@ -263,6 +263,18 @@ public class ControllerActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     deviceListAdapter.notifyDataSetChanged();
+                }
+            });
+        }
+        if(device.equals(currentDevice)){
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    socketList.clear();
+                    for(int i = 0; i < listData.size(); i++)
+                        socketList.add(listData.get(i));
+                    Log.d(TAG, "socketList" + socketList.toString());
+                    socketListAdapter.notifyDataSetChanged();
                 }
             });
         }
