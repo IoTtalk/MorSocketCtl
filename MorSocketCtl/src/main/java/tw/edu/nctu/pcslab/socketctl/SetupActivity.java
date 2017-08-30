@@ -1,5 +1,7 @@
 package tw.edu.nctu.pcslab.socketctl;
 
+import android.Manifest;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -12,12 +14,14 @@ import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -198,6 +202,22 @@ public class SetupActivity extends AppCompatActivity {
         channel = "00";
 
         ssid = null;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                final  AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("This app need location access");
+                builder.setMessage("Please grant location access so this app can detect beacons.");
+                builder.setPositiveButton(android.R.string.ok, null);
+                builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialogInterface) {
+                        requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+                    }
+                });
+                builder.show();
+            }
+        }
 
     }
     private void setupButtonToggle(Boolean enable){
@@ -483,6 +503,8 @@ public class SetupActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context c, Intent intent) {
             List<android.net.wifi.ScanResult> res = wfm.getScanResults();
+
+            Log.d(TAG,res.toString());
             for(ScanResult s : res){
                 if(!foundSSIDs.contains(s.SSID)) {
                     foundSSIDs.add(s.SSID);

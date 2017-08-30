@@ -32,6 +32,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -111,12 +112,6 @@ public class ControllerActivity extends AppCompatActivity {
                 }
             }
         });
-
-
-        /*Spinner appliancesListSpinner = (Spinner) findViewById(R.id.appliance_list_spinner);
-        applianceList = Arrays.asList(getResources().getStringArray(R.array.appliances));
-        applianceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.appliance_row_view, R.id.appliance_row_text_view, applianceList);
-        appliancesListSpinner.setAdapter(applianceListAdapter);*/
 
         // click listener for deviceListSpinner
         deviceListSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
@@ -275,6 +270,23 @@ public class ControllerActivity extends AppCompatActivity {
                         socketList.add(listData.get(i));
                     Log.d(TAG, "socketList" + socketList.toString());
                     socketListAdapter.notifyDataSetChanged();
+
+                    Spinner appliancesListSpinner = (Spinner) findViewById(R.id.appliance_list_spinner);
+                    if(appliancesListSpinner != null) {
+                        applianceList = Arrays.asList(getResources().getStringArray(R.array.appliances));
+                        applianceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.appliance_row_view, R.id.appliance_row_text_view, applianceList);
+                        appliancesListSpinner.setAdapter(applianceListAdapter);
+                    }
+
+                    //click listener for appliancesListSpinner
+                    /*appliancesListSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+
+                        }
+                        @Override
+                        public void onNothingSelected(AdapterView<?> adapterView) {
+                        });*/
                 }
             });
         }
