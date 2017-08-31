@@ -1,11 +1,16 @@
 package tw.edu.nctu.pcslab.socketctl;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -14,10 +19,13 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+
+import com.google.gson.Gson;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
@@ -54,10 +62,10 @@ public class ControllerActivity extends AppCompatActivity {
     private LinkedHashMap<String, ArrayList<String>> deviceLinkedHashMap;
 
     /* appliance list */
-    private List<String> applianceList;
+    private ArrayList<String> applianceArrayList;
     private ArrayAdapter<String> applianceListAdapter;
 
-    /*Mqtt client*/
+    /* Mqtt client */
     MqttAndroidClient mqttClient;
     private String mqttUri = "tcp://192.168.1.232:1883";
     private String clientId = "MorSocketAndroidClient";
@@ -68,10 +76,18 @@ public class ControllerActivity extends AppCompatActivity {
     private String syncDeviceInfoTopic = "SyncDeviceInfo"; // when app open
     private String switchTopic = "Switch";
 
+    /* Save and load data */
+    private SharedPreferences  prefs;
+    private SharedPreferences.Editor prefsEditor;
+    private Gson gson;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_controller);
+        prefs = getPreferences(MODE_PRIVATE);
+        prefsEditor = prefs.edit();
+        gson = new Gson();
 
         currentDevice = null;
         deviceLinkedHashMap = new LinkedHashMap<String, ArrayList<String>>();
@@ -109,8 +125,60 @@ public class ControllerActivity extends AppCompatActivity {
                             publishMessage(switchTopic, message);
                         }
                     });
+                    final Spinner appliancesListSpinner = (Spinner) socketListView.getChildAt(i).findViewById(R.id.appliance_list_spinner);
+                    if(appliancesListSpinner.getAdapter() == null) {
+                        if(applianceArrayList == null) {
+                            ArrayList<String> userCreateAppliances = gson.fromJson(prefs.getString("applianceArrayList", ""), ArrayList.class);
+                            if(userCreateAppliances != null)
+                                applianceArrayList = new ArrayList<String>(userCreateAppliances);
+                            else
+                                applianceArrayList = new ArrayList<String>(Arrays.asList(getResources().getStringArray(R.array.appliances)));
+                        }
+                        if(applianceListAdapter == null)
+                            applianceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.appliance_row_view, R.id.appliance_row_text_view, applianceArrayList);
+                        appliancesListSpinner.setAdapter(applianceListAdapter);
+                    }
+                    //click listener for appliancesListSpinner
+                    appliancesListSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                            Log.d(TAG, "click!!");
+                            if(position == appliancesListSpinner.getCount()-1){
+                                AlertDialog.Builder builder;
+                                builder = new AlertDialog.Builder(ControllerActivity.this);
+                                View viewInflated = LayoutInflater.from(ControllerActivity.this).inflate(R.layout.dialog_edit_text, (ViewGroup) findViewById(android.R.id.content), false);
+
+                                final EditText dialog_edit_text = (EditText)viewInflated.findViewById(R.id.dialog_edit_text);
+                                builder.setView(viewInflated);
+                                builder.setTitle(R.string.enter_your_appliance)
+                                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                String appliance = dialog_edit_text.getText().toString();
+                                                if(!appliance.isEmpty()) {
+                                                    applianceArrayList.add(applianceArrayList.size()-1, appliance);
+                                                    String json = gson.toJson(applianceArrayList);
+                                                    prefsEditor.putString("applianceArrayList", json);
+                                                    prefsEditor.commit();
+                                                    Log.d(TAG, applianceArrayList.toString());
+                                                    applianceListAdapter.notifyDataSetChanged();
+                                                }
+                                            }
+                                        })
+                                        .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                // do nothing
+                                            }
+                                        })
+                                        .show();
+                            }
+                        }
+                        @Override
+                        public void onNothingSelected(AdapterView<?> adapterView) {
+                        }
+                    });
                 }
             }
+
         });
 
         // click listener for deviceListSpinner
@@ -176,7 +244,7 @@ public class ControllerActivity extends AppCompatActivity {
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
         mqttConnectOptions.setConnectionTimeout(10);
-        mqttConnectOptions.setKeepAliveInterval(3);
+        mqttConnectOptions.setKeepAliveInterval(30);
         try {
             //addToHistory("Connecting to " + serverUri);
             mqttClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
@@ -209,6 +277,7 @@ public class ControllerActivity extends AppCompatActivity {
         }
 
     }
+
     public void subscribeToTopic(String subscriptionTopic){
         try {
             mqttClient.subscribe(subscriptionTopic, 0, null, new IMqttActionListener() {
@@ -270,26 +339,10 @@ public class ControllerActivity extends AppCompatActivity {
                         socketList.add(listData.get(i));
                     Log.d(TAG, "socketList" + socketList.toString());
                     socketListAdapter.notifyDataSetChanged();
-
-                    Spinner appliancesListSpinner = (Spinner) findViewById(R.id.appliance_list_spinner);
-                    if(appliancesListSpinner != null) {
-                        applianceList = Arrays.asList(getResources().getStringArray(R.array.appliances));
-                        applianceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.appliance_row_view, R.id.appliance_row_text_view, applianceList);
-                        appliancesListSpinner.setAdapter(applianceListAdapter);
-                    }
-
-                    //click listener for appliancesListSpinner
-                    /*appliancesListSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-
-                        }
-                        @Override
-                        public void onNothingSelected(AdapterView<?> adapterView) {
-                        });*/
                 }
             });
         }
+
     }
     private void parseDeviceInfo(JSONObject jsonObj) throws Exception{
         String device = jsonObj.getString("id");

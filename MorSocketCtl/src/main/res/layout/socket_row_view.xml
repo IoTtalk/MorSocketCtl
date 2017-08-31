@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical" android:layout_width="match_parent"
     android:weightSum="1"
     android:layout_height="30dp">
@@ -40,7 +41,6 @@
         android:id="@+id/appliance_list_spinner"
         android:spinnerMode="dropdown"
         android:background="@drawable/border2"
-        android:entries="@array/appliances"
         android:layout_alignTop="@+id/sswitch_icon"
         android:layout_toEndOf="@+id/socket_row_text_view"
         android:layout_marginStart="21dp" />

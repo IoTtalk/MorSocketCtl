@@ -37,5 +37,5 @@
         <item>microwave</item>
         <item>Others</item>
     </string-array>
-
+    <string name="enter_your_appliance">Enter your appliance</string>
 </resources>
