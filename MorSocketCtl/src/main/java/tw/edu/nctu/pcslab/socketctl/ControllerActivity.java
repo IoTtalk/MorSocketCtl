@@ -1,10 +1,9 @@
 package tw.edu.nctu.pcslab.socketctl;
-
+import tw.edu.nctu.pcslab.socketctl.Socket;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
@@ -38,12 +37,12 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
+
 
 public class ControllerActivity extends AppCompatActivity {
 
@@ -53,13 +52,14 @@ public class ControllerActivity extends AppCompatActivity {
     private ArrayList<String> deviceList;
     private ArrayAdapter<String> deviceListAdapter;
     private String currentDevice;
+    private Boolean refreshCurrentDeviceUI;
 
     /* socket list for ui */
     private ArrayList<String> socketList;
     private ArrayAdapter<String> socketListAdapter;
 
     /* device and socket list relation */
-    private LinkedHashMap<String, ArrayList<String>> deviceLinkedHashMap;
+    private LinkedHashMap<String, ArrayList<Socket>> deviceLinkedHashMap;
 
     /* appliance list */
     private ArrayList<String> applianceArrayList;
@@ -67,7 +67,7 @@ public class ControllerActivity extends AppCompatActivity {
 
     /* Mqtt client */
     MqttAndroidClient mqttClient;
-    private String mqttUri = "tcp://192.168.1.232:1883";
+    private String mqttUri = "tcp://192.168.1.185:1883";
     private String clientId = "MorSocketAndroidClient";
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
@@ -75,6 +75,7 @@ public class ControllerActivity extends AppCompatActivity {
     // publish
     private String syncDeviceInfoTopic = "SyncDeviceInfo"; // when app open
     private String switchTopic = "Switch";
+    private String aliasTopic = "Alias";
 
     /* Save and load data */
     private SharedPreferences  prefs;
@@ -90,9 +91,9 @@ public class ControllerActivity extends AppCompatActivity {
         gson = new Gson();
 
         currentDevice = null;
-        deviceLinkedHashMap = new LinkedHashMap<String, ArrayList<String>>();
+        deviceLinkedHashMap = new LinkedHashMap<String, ArrayList<Socket>>();
         //UI
-        Spinner deviceListSpinner = (Spinner) findViewById(R.id.device_list_spinner);
+        final Spinner deviceListSpinner = (Spinner) findViewById(R.id.device_list_spinner);
         deviceList = new ArrayList<String>();
         deviceList.add(0, getString(R.string.select_morsocket_placeholder));
         deviceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.device_row_view, R.id.device_row_text_view, deviceList);
@@ -106,7 +107,7 @@ public class ControllerActivity extends AppCompatActivity {
             @Override
             public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
                 for(int i = 0; i < socketListView.getChildCount(); i++){
-                    Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
+                    final Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
                     TextView socketRowTextView = (TextView)socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
                     final String index = socketRowTextView.getText().toString();
                     sswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -117,12 +118,19 @@ public class ControllerActivity extends AppCompatActivity {
                                 data.put("id", currentDevice);
                                 data.put("index", index);
                                 data.put("state", isChecked);
+                                MqttMessage message = new MqttMessage();
+                                message.setPayload(data.toString().getBytes());
+                                publishMessage(switchTopic, message);
                             }catch (Exception e){
                                 e.printStackTrace();
                             }
-                            MqttMessage message = new MqttMessage();
-                            message.setPayload(data.toString().getBytes());
-                            publishMessage(switchTopic, message);
+                            // update deviceLinkedHashMap
+                            ArrayList<Socket> sockets = deviceLinkedHashMap.get(currentDevice);
+                            for(Socket s: sockets){
+                                if(s.index.intValue() == Integer.parseInt(index)){
+                                    s.state = isChecked;
+                                }
+                            }
                         }
                     });
                     final Spinner appliancesListSpinner = (Spinner) socketListView.getChildAt(i).findViewById(R.id.appliance_list_spinner);
@@ -134,20 +142,22 @@ public class ControllerActivity extends AppCompatActivity {
                             else
                                 applianceArrayList = new ArrayList<String>(Arrays.asList(getResources().getStringArray(R.array.appliances)));
                         }
-                        if(applianceListAdapter == null)
+                        if(applianceListAdapter == null) {
                             applianceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.appliance_row_view, R.id.appliance_row_text_view, applianceArrayList);
+                        }
                         appliancesListSpinner.setAdapter(applianceListAdapter);
                     }
                     //click listener for appliancesListSpinner
                     appliancesListSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
                         @Override
-                        public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                            Log.d(TAG, "click!!");
-                            if(position == appliancesListSpinner.getCount()-1){
+                        public void onItemSelected(AdapterView<?> adapterView, View view, final int position, long id) {
+                            if(position == 0){ // Please select an appliance
+                                sswitch.setVisibility(View.INVISIBLE);
+                            }
+                            else if(position == appliancesListSpinner.getCount()-1){ //Others
                                 AlertDialog.Builder builder;
                                 builder = new AlertDialog.Builder(ControllerActivity.this);
                                 View viewInflated = LayoutInflater.from(ControllerActivity.this).inflate(R.layout.dialog_edit_text, (ViewGroup) findViewById(android.R.id.content), false);
-
                                 final EditText dialog_edit_text = (EditText)viewInflated.findViewById(R.id.dialog_edit_text);
                                 builder.setView(viewInflated);
                                 builder.setTitle(R.string.enter_your_appliance)
@@ -161,21 +171,92 @@ public class ControllerActivity extends AppCompatActivity {
                                                     prefsEditor.commit();
                                                     Log.d(TAG, applianceArrayList.toString());
                                                     applianceListAdapter.notifyDataSetChanged();
+                                                    sswitch.setVisibility(View.VISIBLE);
+                                                    // push alias message
+                                                    JSONObject aliasObj = new JSONObject();
+                                                    try {
+                                                        aliasObj.put("id", currentDevice);
+                                                        aliasObj.put("index", index);
+                                                        aliasObj.put("alias", appliance);
+                                                        MqttMessage message = new MqttMessage();
+                                                        message.setPayload(aliasObj.toString().getBytes());
+                                                        publishMessage(aliasTopic, message);
+                                                    } catch (JSONException e) {
+                                                        e.printStackTrace();
+                                                    }
                                                 }
+                                                else
+                                                    appliancesListSpinner.setSelection(0);
                                             }
                                         })
                                         .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
                                             public void onClick(DialogInterface dialog, int which) {
-                                                // do nothing
+                                                appliancesListSpinner.setSelection(0);
                                             }
-                                        })
+                                        })/*.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                            @Override
+                                            public void onDismiss(DialogInterface dialog) {
+                                                appliancesListSpinner.setSelection(0);
+                                            }
+                                        })*/
                                         .show();
+                            }
+                            else{
+                                // update deviceLinkedHashMap
+                                ArrayList<Socket> sockets = deviceLinkedHashMap.get(currentDevice);
+                                for(Socket s: sockets){
+                                    if(s.index.intValue() == Integer.parseInt(index)){
+                                        s.alias = applianceArrayList.get(position);
+                                        break;
+                                    }
+                                }
+                                sswitch.setVisibility(View.VISIBLE);
+                                // push alias message
+                                JSONObject aliasObj = new JSONObject();
+                                try {
+                                    aliasObj.put("id", currentDevice);
+                                    aliasObj.put("index", index);
+                                    aliasObj.put("alias", applianceArrayList.get(position));
+                                    MqttMessage message = new MqttMessage();
+                                    message.setPayload(aliasObj.toString().getBytes());
+                                    publishMessage(aliasTopic, message);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                         @Override
                         public void onNothingSelected(AdapterView<?> adapterView) {
                         }
                     });
+                }
+                if(currentDevice != null && refreshCurrentDeviceUI) {
+                    ArrayList<Socket> sl = new ArrayList<Socket>(deviceLinkedHashMap.get(currentDevice));
+                    // update socketList row content: alias, state
+                    for (int i = 0; i < sl.size(); i++) {
+                        Socket socket = sl.get(i);
+                        ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
+                        // appliancesArrayList
+                        Spinner appliancesListSpinner = (Spinner) socketListView.getChildAt(i).findViewById(R.id.appliance_list_spinner);
+                        if (socket.alias != null) {
+                            int appliancesListSpinnerIndex = isArrayListContains(applianceArrayList, socket.alias);
+                            Log.d(TAG, new Integer(appliancesListSpinnerIndex).toString());
+                            if (appliancesListSpinnerIndex != -1) {
+                                appliancesListSpinner.setSelection(appliancesListSpinnerIndex);
+                            }
+                            else { //insert to appliancesArrayList
+                                applianceArrayList.add(applianceArrayList.size() - 1, socket.alias);
+                                appliancesListSpinner.setSelection(applianceArrayList.size() - 1);
+                            }
+                        }
+                        else{
+                            appliancesListSpinner.setSelection(0);
+                        }
+                        // sswitch
+                        Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
+                        sswitch.setChecked(socket.state);
+                    }
+                    refreshCurrentDeviceUI = false;
                 }
             }
 
@@ -188,12 +269,19 @@ public class ControllerActivity extends AppCompatActivity {
                 Object item = adapterView.getItemAtPosition(position);
                 if (!(item.toString() == getString(R.string.select_morsocket_placeholder))) {
                     currentDevice = item.toString();
-                    ArrayList<String> sl = new ArrayList<String>(deviceLinkedHashMap.get(currentDevice));
+                    // update socketList for device
+                    ArrayList<Socket> sl = new ArrayList<Socket>(deviceLinkedHashMap.get(currentDevice));
                     socketList.clear();
-                    for(int i = 0; i < sl.size(); i++)
-                        socketList.add(sl.get(i));
+                    for(int i = 0; i < sl.size(); i++) {
+                        socketList.add(sl.get(i).index.toString());
+                    }
                     Log.d(TAG, socketList.toString());
                     socketListAdapter.notifyDataSetChanged();
+                    refreshCurrentDeviceUI = true;
+                }
+                else{
+                    if(currentDevice != null)
+                        deviceListSpinner.setSelection(deviceList.indexOf(currentDevice));
                 }
             }
             @Override
@@ -309,16 +397,32 @@ public class ControllerActivity extends AppCompatActivity {
             ex.printStackTrace();
         }
     }
+    private int isArrayListContains(ArrayList<String> al, String s){
+        for(int i = 0; i < al.size(); i++){
+            String als = al.get(i);
+            if(als.equalsIgnoreCase(s)){
+                return i;
+            }
+        }
+        return -1;
+    }
     private void parseDeviceInfo(MqttMessage message) throws Exception{
         String jsonString = new String(message.getPayload());
         JSONObject jsonObj = new JSONObject(jsonString);
         Log.d(TAG, jsonString);
         final String device = jsonObj.getString("id");
-        final ArrayList<String> listData = new ArrayList<String>();
+        final ArrayList<Socket> listData = new ArrayList<Socket>();
         JSONArray sockets = jsonObj.getJSONArray("sockets");
         if (sockets != null) {
-            for (int i = 0; i < sockets.length(); i++)
-                listData.add(sockets.getString(i));
+            for (int i = 0; i < sockets.length(); i++) {
+                JSONObject s = sockets.getJSONObject(i);
+                Socket socket;
+                if(s.isNull("alias"))
+                    socket = new Socket(null,  new Integer(s.getInt("index")), s.getBoolean("state"));
+                else
+                    socket = new Socket(s.getString("alias"),  new Integer(s.getInt("index")), s.getBoolean("state"));
+                listData.add(socket);
+            }
         }
         deviceLinkedHashMap.put(device, listData);
         if (!deviceList.contains(device)) {
@@ -335,10 +439,12 @@ public class ControllerActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     socketList.clear();
-                    for(int i = 0; i < listData.size(); i++)
-                        socketList.add(listData.get(i));
+                    for(int i = 0; i < listData.size(); i++) {
+                        socketList.add(listData.get(i).index.toString());
+                    }
                     Log.d(TAG, "socketList" + socketList.toString());
-                    socketListAdapter.notifyDataSetChanged();
+                    Spinner deviceListSpinner = (Spinner) findViewById(R.id.device_list_spinner);
+                    deviceListSpinner.setSelection(deviceList.indexOf(currentDevice));
                 }
             });
         }
@@ -346,12 +452,20 @@ public class ControllerActivity extends AppCompatActivity {
     }
     private void parseDeviceInfo(JSONObject jsonObj) throws Exception{
         String device = jsonObj.getString("id");
-        ArrayList<String> listData = new ArrayList<String>();
+        ArrayList<Socket> listData = new ArrayList<Socket>();
         JSONArray sockets = jsonObj.getJSONArray("sockets");
         if (sockets != null) {
-            for (int i = 0; i < sockets.length(); i++)
-                listData.add(sockets.getString(i));
+            for (int i = 0; i < sockets.length(); i++) {
+                JSONObject s = sockets.getJSONObject(i);
+                Socket socket;
+                if(s.isNull("alias"))
+                    socket = new Socket(null,  new Integer(s.getInt("index")), s.getBoolean("state"));
+                else
+                    socket = new Socket(s.getString("alias"),  new Integer(s.getInt("index")), s.getBoolean("state"));
+                listData.add(socket);
+            }
         }
+        Log.d(TAG, device);
         deviceLinkedHashMap.put(device, listData);
         if (!deviceList.contains(device)) {
             deviceList.add(device);
