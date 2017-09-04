@@ -67,7 +67,7 @@ public class ControllerActivity extends AppCompatActivity {
 
     /* Mqtt client */
     MqttAndroidClient mqttClient;
-    private String mqttUri = "tcp://192.168.1.185:1883";
+    private String mqttUri = "tcp://192.168.1.219:1883";
     private String clientId = "MorSocketAndroidClient";
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
@@ -185,8 +185,6 @@ public class ControllerActivity extends AppCompatActivity {
                                                         e.printStackTrace();
                                                     }
                                                 }
-                                                else
-                                                    appliancesListSpinner.setSelection(0);
                                             }
                                         })
                                         .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {

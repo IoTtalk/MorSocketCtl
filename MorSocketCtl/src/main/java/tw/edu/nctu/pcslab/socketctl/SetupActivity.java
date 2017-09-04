@@ -103,12 +103,20 @@ public class SetupActivity extends AppCompatActivity {
 
         btm = (BluetoothManager)this.getSystemService(BLUETOOTH_SERVICE);
         bta = btm.getAdapter();
-        bts = bta.getBluetoothLeScanner();
-
-        // check if mobile phone support BLE
-        if(bta == null){
-            Toast.makeText(getBaseContext(), R.string.no_sup_ble, Toast.LENGTH_SHORT).show();
-            finish();
+        if (!bta.isEnabled()) {
+            int REQUEST_ENABLE_BT = 2;
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        }
+        else {
+            // check if mobile phone support BLE
+            if (bta == null) {
+                Toast.makeText(getBaseContext(), R.string.no_sup_ble, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+            else{
+                bts = bta.getBluetoothLeScanner();
+            }
         }
         ListView bleListView = (ListView) findViewById(R.id.ble_list_view);
         foundDevices = new ArrayList<String>();
@@ -219,6 +227,14 @@ public class SetupActivity extends AppCompatActivity {
             }
         }
 
+    }
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        if (resultCode == android.app.Activity.RESULT_OK) {
+            bts = bta.getBluetoothLeScanner();
+        }
+        else{
+            finish();
+        }
     }
     private void setupButtonToggle(Boolean enable){
         Button setupBtn = (Button) findViewById(R.id.setup_btn);
@@ -626,10 +642,12 @@ public class SetupActivity extends AppCompatActivity {
             ArrayList<ScanFilter> filters = new ArrayList<ScanFilter>();
             ScanFilter filter = filterBuilder.setDeviceName(bleDeviceName).build();
             filters.add(filter);
-            bts.startScan(filters, settingsBuilder.build(), scanCallback);
+            if(bts != null && bta.isEnabled())
+                bts.startScan(filters, settingsBuilder.build(), scanCallback);
         }
         else{
-            bts.stopScan(scanCallback);
+            if(bts != null && bta.isEnabled())
+                bts.stopScan(scanCallback);
         }
     }
     private ScanCallback scanCallback = new ScanCallback(){
