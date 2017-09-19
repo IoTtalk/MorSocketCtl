@@ -1,6 +1,4 @@
 package tw.edu.nctu.pcslab.socketctl;
-import tw.edu.nctu.pcslab.socketctl.Socket;
-
 import android.app.Service;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -47,6 +45,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -305,7 +304,7 @@ public class ControllerActivity extends AppCompatActivity {
                     refreshCurrentDeviceUI = true;
                 }
                 else{
-                    if(currentDevice != null)
+                    if(currentDevice != null && deviceList != null && deviceLinkedHashMap != null)
                         deviceListSpinner.setSelection(deviceList.indexOf(currentDevice));
                 }
             }
@@ -512,6 +511,25 @@ public class ControllerActivity extends AppCompatActivity {
             @Override
             public void run() {
                 deviceListAdapter.notifyDataSetChanged();
+                if(currentDevice != null && isArrayListContains(deviceList, currentDevice) != -1){
+                    refreshCurrentDeviceUI = true;
+                    // update socketList for device
+                    ArrayList<Socket> sl = new ArrayList<Socket>(deviceLinkedHashMap.get(currentDevice));
+                    socketList.clear();
+                    for(int i = 0; i < sl.size(); i++) {
+                        socketList.add(sl.get(i).index.toString());
+                    }
+                    Log.d(TAG, socketList.toString());
+                    socketListAdapter.notifyDataSetChanged();
+
+                    Spinner deviceListSpinner = (Spinner) findViewById(R.id.device_list_spinner);
+                    deviceListSpinner.setSelection(deviceList.indexOf(currentDevice));
+                    Log.d(TAG, "deviceList.contains(currentDevice)");
+                }
+                else{
+                    currentDevice = null;
+                    refreshCurrentDeviceUI = false;
+                }
             }
         });
     }
@@ -538,6 +556,8 @@ public class ControllerActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         if(item.getItemId() == R.id.action_setup) {
             Intent intent = new Intent(this, SetupActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(intent);
             return true;
         }
@@ -555,16 +575,28 @@ public class ControllerActivity extends AppCompatActivity {
             message.setPayload("synchronize".getBytes());
             publishMessage(syncDeviceInfoTopic, message);
         }
+        // recovery device information
+        if(currentDevice == null){
+            currentDevice = prefs.getString("currentDevice", null);
+            refreshCurrentDeviceUI = false;
+        }
+        Log.d(TAG, "on:  "+currentDevice);
+        Log.d(TAG, "onResume");
     }
 
     @Override
     protected void onPause(){
         super.onPause();
+        // save device information
+        prefsEditor.putString("currentDevice", currentDevice);
+        prefsEditor.commit();
+        Log.d(TAG, "onPause");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "onDestroy");
     }
 
 }
