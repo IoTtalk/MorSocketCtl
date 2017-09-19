@@ -84,17 +84,16 @@ public class SetupActivity extends AppCompatActivity {
 
 
     /* WIFI information*/
-    private String ssid;
-    private String []ip;
-    private String port;
-    private String channel;
+    private String ssid = null;
+    private String ip = "192.168.1.219";
+    private String port = "7654";
+    private String channel = "00";
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setup);
-
         // check if mobile phone support BLE device
         if(!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
             Toast.makeText(getBaseContext(), R.string.no_sup_ble, Toast.LENGTH_SHORT).show();
@@ -201,16 +200,6 @@ public class SetupActivity extends AppCompatActivity {
             }
         });
 
-        ip = new String[4];
-        ip[0] = "192";
-        ip[1] = "168";
-        ip[2] = "1";
-        ip[3] = "232";
-        port = "7654";
-        channel = "00";
-
-        ssid = null;
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 final  AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -236,21 +225,28 @@ public class SetupActivity extends AppCompatActivity {
             finish();
         }
     }
-    private void setupButtonToggle(Boolean enable){
-        Button setupBtn = (Button) findViewById(R.id.setup_btn);
-        ViewGroup bleListView = (ViewGroup) findViewById(R.id.ble_list_view);
-        if(!enable){
-            for(int index=0; index< bleListView.getChildCount(); ++index) {
-                View nextChild = bleListView.getChildAt(index);
-                nextChild.findViewById(R.id.setup_status).setVisibility(View.INVISIBLE);
+    private void setupButtonToggle(final Boolean enable){
+
+        final Button setupBtn = (Button) findViewById(R.id.setup_btn);
+        final ViewGroup bleListView = (ViewGroup) findViewById(R.id.ble_list_view);
+        setupBtn.post(new Runnable() {
+            @Override
+            public void run() {
+                if(!enable){
+                    for(int index=0; index< bleListView.getChildCount(); ++index) {
+                        View nextChild = bleListView.getChildAt(index);
+                        nextChild.findViewById(R.id.setup_status).setVisibility(View.INVISIBLE);
+                    }
+                    setupBtn.setAlpha(.5f);
+                    setupBtn.setEnabled(false);
+                }
+                else{
+                    setupBtn.setAlpha(1.0f);
+                    setupBtn.setEnabled(true);
+                }
             }
-            setupBtn.setAlpha(.5f);
-            setupBtn.setEnabled(false);
-        }
-        else{
-            setupBtn.setAlpha(1.0f);
-            setupBtn.setEnabled(true);
-        }
+        });
+
     }
     private final ServiceConnection bleServiceConnection = new ServiceConnection() {
         @Override
@@ -386,11 +382,12 @@ public class SetupActivity extends AppCompatActivity {
                 //Log.d(TAG, "btnWiFi_0x42 PWD: "+rawCommand[0]+" "+rawCommand[1]+" "+rawCommand[2]+" "+rawCommand[3]);
                 break;
             case 3: //0x43_IP
+                String[] split_ip = ip.split("\\.");
                 rawCommand[0] = MorSensorParameter.OUT_SET_WIFI_SERVER_IP;
-                rawCommand[1] = (byte)(Short.parseShort(ip[0]));
-                rawCommand[2] = (byte)(Short.parseShort(ip[1]));
-                rawCommand[3] = (byte)(Short.parseShort(ip[2]));
-                rawCommand[4] = (byte)(Short.parseShort(ip[3]));
+                rawCommand[1] = (byte)(Short.parseShort(split_ip[0]));
+                rawCommand[2] = (byte)(Short.parseShort(split_ip[1]));
+                rawCommand[3] = (byte)(Short.parseShort(split_ip[2]));
+                rawCommand[4] = (byte)(Short.parseShort(split_ip[3]));
                 rawCommand[5] = (byte)(Short.parseShort(port) >> 8 & 0xFF);
                 rawCommand[6] = (byte)(Short.parseShort(port) & 0xFF);
                 rawCommand[7] = (byte)(Short.parseShort(channel));
@@ -408,6 +405,7 @@ public class SetupActivity extends AppCompatActivity {
             iteration++;
         }while(!res && iteration < iterationLimit);
         if(!res){
+
             setupButtonToggle(true);
         }
         Log.d(TAG, "SendCommand" + step + ":" + res + " "+ rawCommand[0]);

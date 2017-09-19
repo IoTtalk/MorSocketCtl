@@ -5,14 +5,14 @@
     android:weightSum="1">
 
     <TextView
-        android:text="TextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/appliance_row_text_view"
         android:layout_weight="0.07"
-        android:textSize="25sp"
+        android:textSize="30sp"
         android:textColor="@android:color/black"
-        android:textAlignment="textStart"
-        android:padding="2dp"/>
+        android:padding="2dp"
+        android:maxLines="1"
+        android:layout_gravity="center_vertical" />
 
 </LinearLayout>

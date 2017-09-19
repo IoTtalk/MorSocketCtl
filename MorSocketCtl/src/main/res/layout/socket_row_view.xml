@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical" android:layout_width="match_parent"
+    android:orientation="horizontal" android:layout_width="match_parent"
     android:weightSum="1"
-    android:layout_height="80dp">
+    android:layout_height="wrap_content"
+    app:layout_collapseParallaxMultiplier="1.0"
+    android:background="@android:color/white">
 
     <ImageView
-        app:srcCompat="@drawable/sswitch"
         android:id="@+id/sswitch_icon"
         android:layout_width="50dp"
         android:scaleType="fitCenter"
@@ -15,37 +16,29 @@
         android:adjustViewBounds="true"
         android:background="@drawable/sswitch"
         android:layout_height="50dp"
-        android:layout_marginStart="14dp"
-        android:layout_centerVertical="true"
-        android:layout_alignParentStart="true" />
+        android:layout_gravity="center_vertical"/>
 
     <TextView
         android:text="TextView"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:id="@+id/socket_row_text_view"
         android:textColor="@android:color/black"
-        android:textAlignment="textStart"
         android:textSize="30sp"
-        android:layout_alignBaseline="@+id/sswitch"
-        android:layout_alignBottom="@+id/sswitch"
-        android:layout_toEndOf="@+id/sswitch_icon" />
+        android:layout_gravity="center_vertical" />
 
     <Spinner
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_height="fill_parent"
         android:id="@+id/appliance_list_spinner"
-        android:background="@drawable/border2"
         android:layout_marginStart="13dp"
-        android:layout_toEndOf="@+id/socket_row_text_view"
-        android:layout_alignParentTop="true" />
+        android:layout_gravity="center_vertical"
+        android:layout_width="200dp" />
 
     <Switch
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
         android:id="@+id/sswitch"
-        android:layout_marginEnd="12dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true" />
-</RelativeLayout>
+        android:layout_gravity="center_vertical"
+        android:paddingLeft="10dp" />
+</LinearLayout>

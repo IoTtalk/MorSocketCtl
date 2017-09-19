@@ -36,7 +36,7 @@
         <Spinner
             android:layout_width="222dp"
             android:id="@+id/ap_list_spinner"
-            android:spinnerMode="dialog"
+            android:spinnerMode="dropdown"
             android:layout_height="30dp"
             android:background="@drawable/border"
             android:gravity="center" />

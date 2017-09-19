@@ -1,5 +1,10 @@
 package tw.edu.nctu.pcslab.socketctl;
 import tw.edu.nctu.pcslab.socketctl.Socket;
+
+import android.app.Service;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
+import android.os.Vibrator;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -15,6 +20,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
@@ -86,6 +94,7 @@ public class ControllerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_controller);
+
         prefs = getPreferences(MODE_PRIVATE);
         prefsEditor = prefs.edit();
         gson = new Gson();
@@ -103,15 +112,33 @@ public class ControllerActivity extends AppCompatActivity {
         socketList = new ArrayList<String>();
         socketListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.socket_row_view, R.id.socket_row_text_view, socketList);
         socketListView.setAdapter(socketListAdapter);
+        final ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+
         socketListView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() { // rebind onCheckedChanged event after Layout has been changed
             @Override
             public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
                 for(int i = 0; i < socketListView.getChildCount(); i++){
                     final Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
-                    TextView socketRowTextView = (TextView)socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
+                     TextView socketRowTextView = (TextView)socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
                     final String index = socketRowTextView.getText().toString();
+                    final View socketListViewRowItem = (View)socketListView.getChildAt(i);
                     sswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                            // animation
+                            final Animation animation = new AlphaAnimation(1, 0); // Change alpha from fully visible to invisible
+                            animation.setDuration(100);
+                            animation.setInterpolator(new LinearInterpolator()); // do not alter animation rate
+                            animation.setRepeatCount(1); // Repeat animation infinitely
+                            animation.setRepeatMode(Animation.REVERSE); // Reverse animation at the end so the button will fade back in
+                            socketListViewRowItem.startAnimation(animation);
+
+                            // vibration
+                            setVibrate(100);
+
+                            // sound;
+                            toneG.startTone(ToneGenerator.TONE_CDMA_CALLDROP_LITE, 100);
+
                             Log.d(TAG, "isChedcked:" + isChecked);
                             JSONObject data = new JSONObject();
                             try {
@@ -363,7 +390,10 @@ public class ControllerActivity extends AppCompatActivity {
         }
 
     }
-
+    public void setVibrate(int time){
+        Vibrator myVibrator = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
+        myVibrator.vibrate(time);
+    }
     public void subscribeToTopic(String subscriptionTopic){
         try {
             mqttClient.subscribe(subscriptionTopic, 0, null, new IMqttActionListener() {
