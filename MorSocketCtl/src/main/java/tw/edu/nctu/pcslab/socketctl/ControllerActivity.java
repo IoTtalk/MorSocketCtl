@@ -2,6 +2,7 @@ package tw.edu.nctu.pcslab.socketctl;
 import android.app.Service;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.os.Build;
 import android.os.Vibrator;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -11,7 +12,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,11 +29,16 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.view.ViewGroup.LayoutParams;
 
+import com.github.aakira.expandablelayout.Utils;
 import com.google.gson.Gson;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -49,6 +58,10 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
+
+import tw.edu.nctu.pcslab.recyclerview.ItemModel;
+import tw.edu.nctu.pcslab.recyclerview.RecyclerViewRecyclerAdapter;
 
 
 public class ControllerActivity extends AppCompatActivity {
@@ -74,7 +87,7 @@ public class ControllerActivity extends AppCompatActivity {
 
     /* Mqtt client */
     MqttAndroidClient mqttClient;
-    private String mqttUri = "tcp://192.168.1.219:1883";
+    private String mqttUri = "tcp://192.168.1.25:1883";
     private String clientId = "MorSocketAndroidClient";
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
@@ -93,7 +106,53 @@ public class ControllerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_controller);
+        TextView deviceNameTextView = (TextView) findViewById(R.id.deviceNameTextView);
+        deviceNameTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                LayoutInflater inflater = getLayoutInflater();
+                RecyclerView customView = (RecyclerView) inflater.inflate(R.layout.expandable_device_view, null);
 
+                final List<ItemModel> data = new ArrayList<>();
+                data.add(new ItemModel(
+                        "0 ACCELERATE_DECELERATE_INTERPOLATOR",
+                        R.color.colorSuccess,
+                        R.color.colorSuccess,
+                        Utils.createInterpolator(Utils.ACCELERATE_DECELERATE_INTERPOLATOR)));
+                data.add(new ItemModel(
+                        "1 ACCELERATE_INTERPOLATOR",
+                        R.color.colorSuccess,
+                        R.color.colorSuccess,
+                        Utils.createInterpolator(Utils.ACCELERATE_INTERPOLATOR)));
+                data.add(new ItemModel(
+                        "2 BOUNCE_INTERPOLATOR",
+                        R.color.colorSuccess,
+                        R.color.colorSuccess,
+                        Utils.createInterpolator(Utils.BOUNCE_INTERPOLATOR)));
+                data.add(new ItemModel(
+                        "3 DECELERATE_INTERPOLATOR",
+                        R.color.colorSuccess,
+                        R.color.colorSuccess,
+                        Utils.createInterpolator(Utils.DECELERATE_INTERPOLATOR)));
+
+
+                customView.setLayoutManager(new LinearLayoutManager(ControllerActivity.this));
+
+                customView.setAdapter(new RecyclerViewRecyclerAdapter(data));
+                Log.d(TAG, customView.toString());
+                PopupWindow mPopupWindow = new PopupWindow(
+                        customView,
+                        LayoutParams.MATCH_PARENT,
+                        LayoutParams.MATCH_PARENT
+                );
+                if (Build.VERSION.SDK_INT >= 21) {
+                    mPopupWindow.setElevation(5.0f);
+                }
+                View rootView = LayoutInflater.from(ControllerActivity.this).inflate(R.layout.activity_controller, null);
+                mPopupWindow.showAtLocation(rootView, Gravity.TOP, 0, 0);
+                Log.d(TAG, "mPopupWindow");
+            }
+        });
         prefs = getPreferences(MODE_PRIVATE);
         prefsEditor = prefs.edit();
         gson = new Gson();
