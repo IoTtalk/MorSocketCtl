@@ -6,5 +6,9 @@
     <color name="colorSuccess">#008000</color>
     <color name="colorFailed">#dc143c</color>
 
+    <color name="mediumaquamarine">#66cdaa</color>
     <color name="white">#fff</color>
+    <color name="blue">#00008b</color>
+    <color name="indigo">#4b0082</color>
+    <color name="gray">#dcdcdc</color>
 </resources>

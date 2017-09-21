@@ -20,16 +20,6 @@
         android:textColor="@android:color/black"
         android:textSize="18sp" />
 
-    <ListView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/socket_list_view"
-        android:layout_marginTop="25dp"
-        android:layout_below="@+id/device_list_spinner"
-        android:layout_alignParentStart="true"
-        android:dividerHeight="10dp"
-        android:divider="#dcdcdc" />
-
     <Spinner
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
@@ -39,5 +29,22 @@
         android:layout_alignBottom="@+id/deviceNameTextView"
         android:layout_toEndOf="@+id/deviceNameTextView"
         android:layout_marginStart="10dp" />
+
+    <android.support.v7.widget.RecyclerView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/device_alias_recycler_View"
+        android:layout_alignParentTop="true"
+        android:paddingBottom="20dp" />
+
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/socket_list_view"
+        android:dividerHeight="10dp"
+        android:divider="#dcdcdc"
+        android:layout_below="@+id/device_alias_recycler_View"
+        android:layout_alignParentEnd="true" />
+
 
 </RelativeLayout>

@@ -8,6 +8,8 @@ import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -18,6 +20,7 @@ import com.github.aakira.expandablelayout.Utils;
 
 import java.util.List;
 
+import tw.edu.nctu.pcslab.socketctl.ControllerActivity;
 import tw.edu.nctu.pcslab.socketctl.R;
 
 public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerViewRecyclerAdapter.ViewHolder> {
@@ -45,7 +48,11 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
         final ItemModel item = data.get(position);
         holder.setIsRecyclable(false);
         holder.textView.setText(item.description);
+//        holder.textView.setTextSize(25);
         holder.itemView.setBackgroundColor(ContextCompat.getColor(context, item.colorId1));
+        ArrayAdapter<String> deviceListViewAdapter = new ArrayAdapter<String>(ControllerActivity.getContext(), R.layout.device_row_view, R.id.device_row_text_view, item.deviceList);
+        holder.deviceListView.setAdapter(deviceListViewAdapter);
+
         holder.expandableLayout.setInRecyclerView(true);
         holder.expandableLayout.setBackgroundColor(ContextCompat.getColor(context, item.colorId2));
         holder.expandableLayout.setInterpolator(item.interpolator);
@@ -91,11 +98,14 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
          */
         public ExpandableLinearLayout expandableLayout;
 
+        public ListView deviceListView;
+
         public ViewHolder(View v) {
             super(v);
-            textView = (TextView) v.findViewById(R.id.textView);
-            buttonLayout = (RelativeLayout) v.findViewById(R.id.button);
-            expandableLayout = (ExpandableLinearLayout) v.findViewById(R.id.expandableLayout);
+            textView = (TextView) v.findViewById(R.id.recycler_view_list_row_text_view);
+            buttonLayout = (RelativeLayout) v.findViewById(R.id.recycler_view_list_row_button);
+            expandableLayout = (ExpandableLinearLayout) v.findViewById(R.id.recycler_view_list_row_expandableLayout);
+            deviceListView = (ListView) v.findViewById(R.id.device_list_view);
         }
     }
 

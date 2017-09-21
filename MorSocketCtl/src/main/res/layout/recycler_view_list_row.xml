@@ -7,7 +7,7 @@
     >
 
     <RelativeLayout
-        android:id="@+id/button"
+        android:id="@+id/recycler_view_list_row_button"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_alignParentRight="true"
@@ -23,38 +23,32 @@
     </RelativeLayout>
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/recycler_view_list_row_text_view"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_alignParentTop="true"
-        android:layout_toLeftOf="@id/button"
+        android:layout_toLeftOf="@id/recycler_view_list_row_button"
         android:gravity="center"
-        android:padding="8dp"
-        android:textColor="@color/white"
-        android:textSize="12sp"
+        android:padding="1dp"
+        android:textColor="@color/blue"
+        android:textSize="20sp"
+        android:background="@drawable/border"
         />
 
     <com.github.aakira.expandablelayout.ExpandableLinearLayout
-        android:id="@+id/expandableLayout"
+        android:id="@+id/recycler_view_list_row_expandableLayout"
         android:layout_width="match_parent"
         android:layout_height="120dp"
-        android:layout_below="@id/textView"
-        android:orientation="vertical">
-        <!--app:ael_duration="400"-->
-        <!--app:ael_expanded="false"-->
+        android:layout_below="@id/recycler_view_list_row_text_view"
+        android:orientation="vertical"
+        >
 
 
-        <TextView
+
+        <ListView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:gravity="center"
-            android:padding="@dimen/margin_normal"
-            android:text="
-    sample.sample.sample.sample.sample.sample.sample.sample.sample.sample.\n
-    "
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            />
+            android:layout_height="match_parent"
+            android:id="@+id/device_list_view" />
+
     </com.github.aakira.expandablelayout.ExpandableLinearLayout>
 </RelativeLayout>

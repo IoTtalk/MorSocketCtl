@@ -1,5 +1,6 @@
 package tw.edu.nctu.pcslab.socketctl;
 import android.app.Service;
+import android.content.Context;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Build;
@@ -12,6 +13,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -67,6 +69,7 @@ import tw.edu.nctu.pcslab.recyclerview.RecyclerViewRecyclerAdapter;
 public class ControllerActivity extends AppCompatActivity {
 
     private final String TAG = "ControllerActivity";
+    public static Context context;
 
     /* device list for ui */
     private ArrayList<String> deviceList;
@@ -87,7 +90,7 @@ public class ControllerActivity extends AppCompatActivity {
 
     /* Mqtt client */
     MqttAndroidClient mqttClient;
-    private String mqttUri = "tcp://192.168.1.25:1883";
+    private String mqttUri = "tcp://192.168.1.219:1883";
     private String clientId = "MorSocketAndroidClient";
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
@@ -106,53 +109,27 @@ public class ControllerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_controller);
-        TextView deviceNameTextView = (TextView) findViewById(R.id.deviceNameTextView);
-        deviceNameTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                LayoutInflater inflater = getLayoutInflater();
-                RecyclerView customView = (RecyclerView) inflater.inflate(R.layout.expandable_device_view, null);
-
-                final List<ItemModel> data = new ArrayList<>();
-                data.add(new ItemModel(
-                        "0 ACCELERATE_DECELERATE_INTERPOLATOR",
-                        R.color.colorSuccess,
-                        R.color.colorSuccess,
-                        Utils.createInterpolator(Utils.ACCELERATE_DECELERATE_INTERPOLATOR)));
-                data.add(new ItemModel(
-                        "1 ACCELERATE_INTERPOLATOR",
-                        R.color.colorSuccess,
-                        R.color.colorSuccess,
-                        Utils.createInterpolator(Utils.ACCELERATE_INTERPOLATOR)));
-                data.add(new ItemModel(
-                        "2 BOUNCE_INTERPOLATOR",
-                        R.color.colorSuccess,
-                        R.color.colorSuccess,
-                        Utils.createInterpolator(Utils.BOUNCE_INTERPOLATOR)));
-                data.add(new ItemModel(
-                        "3 DECELERATE_INTERPOLATOR",
-                        R.color.colorSuccess,
-                        R.color.colorSuccess,
-                        Utils.createInterpolator(Utils.DECELERATE_INTERPOLATOR)));
+        context = ControllerActivity.this;
 
 
-                customView.setLayoutManager(new LinearLayoutManager(ControllerActivity.this));
+        ArrayList<String> deviceList1 = new ArrayList<String>();
+        deviceList1.add("asd12");deviceList1.add("gf1ghd2");deviceList1.add("tekllr4");
+        final List<ItemModel> data = new ArrayList<>();
+        data.add(new ItemModel(
+                getResources().getString(R.string.select_morsocket_placeholder),
+                R.color.gray,
+                R.color.white,
+                Utils.createInterpolator(Utils.BOUNCE_INTERPOLATOR),
+                deviceList1));
 
-                customView.setAdapter(new RecyclerViewRecyclerAdapter(data));
-                Log.d(TAG, customView.toString());
-                PopupWindow mPopupWindow = new PopupWindow(
-                        customView,
-                        LayoutParams.MATCH_PARENT,
-                        LayoutParams.MATCH_PARENT
-                );
-                if (Build.VERSION.SDK_INT >= 21) {
-                    mPopupWindow.setElevation(5.0f);
-                }
-                View rootView = LayoutInflater.from(ControllerActivity.this).inflate(R.layout.activity_controller, null);
-                mPopupWindow.showAtLocation(rootView, Gravity.TOP, 0, 0);
-                Log.d(TAG, "mPopupWindow");
-            }
-        });
+        RecyclerView expandAbleDeviceView = (RecyclerView) findViewById(R.id.device_alias_recycler_View);
+        expandAbleDeviceView.setHasFixedSize(true);
+
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        expandAbleDeviceView.setLayoutManager(linearLayoutManager);
+        expandAbleDeviceView.setAdapter(new RecyclerViewRecyclerAdapter(data));
+        
         prefs = getPreferences(MODE_PRIVATE);
         prefsEditor = prefs.edit();
         gson = new Gson();
@@ -447,6 +424,9 @@ public class ControllerActivity extends AppCompatActivity {
             ex.printStackTrace();
         }
 
+    }
+    public static Context getContext(){
+        return context;
     }
     public void setVibrate(int time){
         Vibrator myVibrator = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
