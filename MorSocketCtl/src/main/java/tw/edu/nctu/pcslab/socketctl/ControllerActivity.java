@@ -59,11 +59,13 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 import tw.edu.nctu.pcslab.recyclerview.ItemModel;
 import tw.edu.nctu.pcslab.recyclerview.RecyclerViewRecyclerAdapter;
+import tw.edu.nctu.pcslab.sectionlistview.ListCell;
 
 
 public class ControllerActivity extends AppCompatActivity {
@@ -112,8 +114,19 @@ public class ControllerActivity extends AppCompatActivity {
         context = ControllerActivity.this;
 
 
-        ArrayList<String> deviceList1 = new ArrayList<String>();
-        deviceList1.add("asd12");deviceList1.add("gf1ghd2");deviceList1.add("tekllr4");
+        ArrayList<ListCell> deviceList1 = new ArrayList<ListCell>();
+        deviceList1.add(new ListCell("Apple", "Electronics"));
+        deviceList1.add(new ListCell("BMW", "Cars"));
+        deviceList1.add(new ListCell("Samsung", "Electronics"));
+        deviceList1.add(new ListCell("Audi", "Cars"));
+        deviceList1.add(new ListCell("Brazil", "Countries"));
+        deviceList1.add(new ListCell("Sony", "Electronics"));
+        deviceList1.add(new ListCell("Turkey", "Countries"));
+        deviceList1.add(new ListCell("LG", "Electronics"));
+        deviceList1.add(new ListCell("Denmark", "Countries"));
+
+
+
         final List<ItemModel> data = new ArrayList<>();
         data.add(new ItemModel(
                 getResources().getString(R.string.select_morsocket_placeholder),
@@ -129,7 +142,7 @@ public class ControllerActivity extends AppCompatActivity {
         linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         expandAbleDeviceView.setLayoutManager(linearLayoutManager);
         expandAbleDeviceView.setAdapter(new RecyclerViewRecyclerAdapter(data));
-        
+
         prefs = getPreferences(MODE_PRIVATE);
         prefsEditor = prefs.edit();
         gson = new Gson();
@@ -291,32 +304,44 @@ public class ControllerActivity extends AppCompatActivity {
                     });
                 }
                 if(currentDevice != null && refreshCurrentDeviceUI) {
-                    ArrayList<Socket> sl = new ArrayList<Socket>(deviceLinkedHashMap.get(currentDevice));
-                    // update socketList row content: alias, state
-                    for (int i = 0; i < sl.size(); i++) {
-                        Socket socket = sl.get(i);
-                        ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
-                        // appliancesArrayList
-                        Spinner appliancesListSpinner = (Spinner) socketListView.getChildAt(i).findViewById(R.id.appliance_list_spinner);
-                        if (socket.alias != null) {
-                            int appliancesListSpinnerIndex = isArrayListContains(applianceArrayList, socket.alias);
-                            Log.d(TAG, new Integer(appliancesListSpinnerIndex).toString());
-                            if (appliancesListSpinnerIndex != -1) {
-                                appliancesListSpinner.setSelection(appliancesListSpinnerIndex);
+                    //try {
+                        ArrayList<Socket> sl = new ArrayList<Socket>(deviceLinkedHashMap.get(currentDevice));
+                        // update socketList row content: alias, state
+                        for (int i = 0; i < sl.size(); i++) {
+                            Socket socket = sl.get(i);
+                            ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
+                            // appliancesArrayList
+                            Spinner appliancesListSpinner = null;
+                            for(int j = 0; j < socketListView.getChildCount(); j++){
+                                TextView t = (TextView) socketListView.getChildAt(j).findViewById(R.id.socket_row_text_view);
+                                if(t.getText().toString().equals(socket.index.toString())) {
+                                    appliancesListSpinner = (Spinner) socketListView.getChildAt(j).findViewById(R.id.appliance_list_spinner);
+                                    break;
+                                }
                             }
-                            else { //insert to appliancesArrayList
-                                applianceArrayList.add(applianceArrayList.size() - 1, socket.alias);
-                                appliancesListSpinner.setSelection(applianceArrayList.size() - 1);
+                            if(appliancesListSpinner == null)
+                                continue;
+                            if (socket.alias != null) {
+                                int appliancesListSpinnerIndex = isArrayListContains(applianceArrayList, socket.alias);
+                                Log.d(TAG, new Integer(appliancesListSpinnerIndex).toString());
+                                if (appliancesListSpinnerIndex != -1) {
+                                    appliancesListSpinner.setSelection(appliancesListSpinnerIndex);
+                                } else { //insert to appliancesArrayList
+                                    applianceArrayList.add(applianceArrayList.size() - 1, socket.alias);
+                                    appliancesListSpinner.setSelection(applianceArrayList.size() - 1);
+                                }
+                            } else {
+                                appliancesListSpinner.setSelection(0);
                             }
+                            // sswitch
+                            Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
+                            sswitch.setChecked(socket.state);
                         }
-                        else{
-                            appliancesListSpinner.setSelection(0);
-                        }
-                        // sswitch
-                        Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
-                        sswitch.setChecked(socket.state);
-                    }
-                    refreshCurrentDeviceUI = false;
+                    //} catch (Exception e){
+                    //    e.printStackTrace();
+                    //}finally {
+                        refreshCurrentDeviceUI = false;
+                    //}
                 }
             }
 
@@ -425,6 +450,7 @@ public class ControllerActivity extends AppCompatActivity {
         }
 
     }
+
     public static Context getContext(){
         return context;
     }

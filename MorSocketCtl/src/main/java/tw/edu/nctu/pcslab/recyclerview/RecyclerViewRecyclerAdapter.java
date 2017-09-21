@@ -8,7 +8,6 @@ import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -18,8 +17,12 @@ import com.github.aakira.expandablelayout.ExpandableLayoutListenerAdapter;
 import com.github.aakira.expandablelayout.ExpandableLinearLayout;
 import com.github.aakira.expandablelayout.Utils;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import tw.edu.nctu.pcslab.sectionlistview.ListAdapter;
+import tw.edu.nctu.pcslab.sectionlistview.ListCell;
 import tw.edu.nctu.pcslab.socketctl.ControllerActivity;
 import tw.edu.nctu.pcslab.socketctl.R;
 
@@ -48,9 +51,10 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
         final ItemModel item = data.get(position);
         holder.setIsRecyclable(false);
         holder.textView.setText(item.description);
-//        holder.textView.setTextSize(25);
         holder.itemView.setBackgroundColor(ContextCompat.getColor(context, item.colorId1));
-        ArrayAdapter<String> deviceListViewAdapter = new ArrayAdapter<String>(ControllerActivity.getContext(), R.layout.device_row_view, R.id.device_row_text_view, item.deviceList);
+        item.deviceList = sortAndAddSections(item.deviceList);
+        ListAdapter deviceListViewAdapter = new ListAdapter(ControllerActivity.getContext(), item.deviceList);
+
         holder.deviceListView.setAdapter(deviceListViewAdapter);
 
         holder.expandableLayout.setInRecyclerView(true);
@@ -79,7 +83,27 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
             }
         });
     }
+    private ArrayList<ListCell> sortAndAddSections(ArrayList<ListCell> itemList) {
+        ArrayList tempList = new ArrayList();
+        //First we sort the array
+        Collections.sort(itemList);
 
+        //Loops thorugh the list and add a section before each sectioncell start
+        String header = "";
+        for(int i = 0; i < itemList.size(); i++)
+        {
+            //If it is the start of a new section we create a new listcell and add it to our array
+            if(header != itemList.get(i).getCategory()){
+                ListCell sectionCell = new ListCell(itemList.get(i).getCategory(), null);
+                sectionCell.setToSectionHeader();
+                tempList.add(sectionCell);
+                header = itemList.get(i).getCategory();
+            }
+            tempList.add(itemList.get(i));
+        }
+
+        return tempList;
+    }
     private void onClickButton(final ExpandableLayout expandableLayout) {
         expandableLayout.toggle();
     }
