@@ -3,6 +3,7 @@ package tw.edu.nctu.pcslab.sectionlistview;
 import java.util.ArrayList;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,11 +19,10 @@ public class ListAdapter extends ArrayAdapter {
         super(context, 0, items);
         inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
-
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         View v = convertView;
-        ListCell cell = (ListCell) getItem(position);
+        DeviceCell cell = (DeviceCell) getItem(position);
 
         //If the cell is a section header we inflate the header layout
         if(cell.isSectionHeader())

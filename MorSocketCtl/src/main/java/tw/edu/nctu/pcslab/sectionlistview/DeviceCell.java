@@ -1,13 +1,13 @@
 package tw.edu.nctu.pcslab.sectionlistview;
 
 
-public class ListCell implements Comparable<ListCell>{
+public class DeviceCell implements Comparable<DeviceCell>{
 
     private String name;
     private String category;
     private boolean isSectionHeader;
 
-    public ListCell(String name, String category)
+    public DeviceCell(String name, String category)
     {
         this.name = name;
         this.category = category;
@@ -35,7 +35,7 @@ public class ListCell implements Comparable<ListCell>{
     }
 
     @Override
-    public int compareTo(ListCell other) {
+    public int compareTo(DeviceCell other) {
         return this.category.compareTo(other.category);
     }
 

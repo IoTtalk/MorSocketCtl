@@ -4,10 +4,12 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -22,18 +24,20 @@ import java.util.Collections;
 import java.util.List;
 
 import tw.edu.nctu.pcslab.sectionlistview.ListAdapter;
-import tw.edu.nctu.pcslab.sectionlistview.ListCell;
+import tw.edu.nctu.pcslab.sectionlistview.DeviceCell;
 import tw.edu.nctu.pcslab.socketctl.ControllerActivity;
 import tw.edu.nctu.pcslab.socketctl.R;
+import tw.edu.nctu.pcslab.socketctl.Socket;
 
 public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerViewRecyclerAdapter.ViewHolder> {
 
     private final List<ItemModel> data;
     private Context context;
     private SparseBooleanArray expandState = new SparseBooleanArray();
-
-    public RecyclerViewRecyclerAdapter(final List<ItemModel> data) {
+    private ControllerActivity controllerActivity;
+    public RecyclerViewRecyclerAdapter(final List<ItemModel> data, ControllerActivity controllerActivity) {
         this.data = data;
+        this.controllerActivity = controllerActivity;
         for (int i = 0; i < data.size(); i++) {
             expandState.append(i, false);
         }
@@ -52,11 +56,19 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
         holder.setIsRecyclable(false);
         holder.textView.setText(item.description);
         holder.itemView.setBackgroundColor(ContextCompat.getColor(context, item.colorId1));
-        item.deviceList = sortAndAddSections(item.deviceList);
-        ListAdapter deviceListViewAdapter = new ListAdapter(ControllerActivity.getContext(), item.deviceList);
-
+        ArrayList<DeviceCell> deviceList = sortAndAddSections(item.deviceList);
+        ListAdapter deviceListViewAdapter = new ListAdapter(ControllerActivity.getContext(), deviceList);
         holder.deviceListView.setAdapter(deviceListViewAdapter);
-
+        holder.deviceListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView,
+                                    View view,
+                                    int position,
+                                    long l) {
+                controllerActivity.clickDeviceListViewItem(adapterView, view,
+                        position, l);
+            }
+        });
         holder.expandableLayout.setInRecyclerView(true);
         holder.expandableLayout.setBackgroundColor(ContextCompat.getColor(context, item.colorId2));
         holder.expandableLayout.setInterpolator(item.interpolator);
@@ -83,7 +95,7 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
             }
         });
     }
-    private ArrayList<ListCell> sortAndAddSections(ArrayList<ListCell> itemList) {
+    private ArrayList<DeviceCell> sortAndAddSections(ArrayList<DeviceCell> itemList) {
         ArrayList tempList = new ArrayList();
         //First we sort the array
         Collections.sort(itemList);
@@ -94,7 +106,7 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
         {
             //If it is the start of a new section we create a new listcell and add it to our array
             if(header != itemList.get(i).getCategory()){
-                ListCell sectionCell = new ListCell(itemList.get(i).getCategory(), null);
+                DeviceCell sectionCell = new DeviceCell(itemList.get(i).getCategory(), null);
                 sectionCell.setToSectionHeader();
                 tempList.add(sectionCell);
                 header = itemList.get(i).getCategory();
