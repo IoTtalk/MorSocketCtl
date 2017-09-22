@@ -52,6 +52,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -86,7 +87,7 @@ public class ControllerActivity extends AppCompatActivity {
 
     /* Mqtt client */
     MqttAndroidClient mqttClient;
-    private String mqttUri = "tcp://192.168.0.102:1883";
+    private String mqttUri = "tcp://192.168.1.219:1883";
     private String clientId = "MorSocketAndroidClient";
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
@@ -454,7 +455,10 @@ public class ControllerActivity extends AppCompatActivity {
                                          View view, int position, long l){
         Log.d(TAG, "click");
         DeviceCell deviceCell = (DeviceCell) adapterView.getItemAtPosition(position);
+        if(deviceCell.isSectionHeader())
+            return;
         currentDevice = deviceCell;
+        updateExpandAbleDeviceView();
         ArrayList<Socket> sl = new ArrayList<Socket>(getDeviceLinkedHashMapByKey(currentDevice));
         socketList.clear();
         for(int i = 0; i < sl.size(); i++) {
@@ -464,11 +468,11 @@ public class ControllerActivity extends AppCompatActivity {
         socketListAdapter.notifyDataSetChanged();
         refreshCurrentDeviceUI = true;
     }
+
     private void updateExpandAbleDeviceView(){
         String selectMorSocketListTitle = (currentDevice == null) ?
                 getResources().getString(R.string.select_morsocket_placeholder) :
                     currentDevice.getCategory()+"("+currentDevice.getName()+")";
-        selectMorSocketList = new ArrayList<>();
         selectMorSocketList.clear();
         selectMorSocketList.add(new ItemModel(
                 selectMorSocketListTitle,
@@ -476,7 +480,13 @@ public class ControllerActivity extends AppCompatActivity {
                 R.color.white,
                 Utils.createInterpolator(Utils.BOUNCE_INTERPOLATOR),
                 deviceList));
-        expandAbleDeviceViewAdapter.notifyDataSetChanged();
+        expandAbleDeviceView = (RecyclerView) findViewById(R.id.device_alias_recycler_View);
+        expandAbleDeviceView.setHasFixedSize(true);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        expandAbleDeviceView.setLayoutManager(linearLayoutManager);
+        expandAbleDeviceViewAdapter = new RecyclerViewRecyclerAdapter(selectMorSocketList, this);
+        expandAbleDeviceView.setAdapter(expandAbleDeviceViewAdapter);
     }
     private void updateDeviceLinkedHashMap(DeviceCell deviceCell, ArrayList<Socket> listData){
         for(DeviceCell d : deviceLinkedHashMap.keySet()){

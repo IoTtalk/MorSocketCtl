@@ -95,7 +95,7 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
             }
         });
     }
-    private ArrayList<DeviceCell> sortAndAddSections(ArrayList<DeviceCell> itemList) {
+    public ArrayList<DeviceCell> sortAndAddSections(ArrayList<DeviceCell> itemList) {
         ArrayList tempList = new ArrayList();
         //First we sort the array
         Collections.sort(itemList);
