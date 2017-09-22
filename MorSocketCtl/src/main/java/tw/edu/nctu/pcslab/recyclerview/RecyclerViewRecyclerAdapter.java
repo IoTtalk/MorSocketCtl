@@ -96,7 +96,7 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
         });
     }
     public ArrayList<DeviceCell> sortAndAddSections(ArrayList<DeviceCell> itemList) {
-        ArrayList tempList = new ArrayList();
+        ArrayList<DeviceCell> tempList = new ArrayList<DeviceCell> ();
         //First we sort the array
         Collections.sort(itemList);
 
@@ -105,7 +105,7 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
         for(int i = 0; i < itemList.size(); i++)
         {
             //If it is the start of a new section we create a new listcell and add it to our array
-            if(header != itemList.get(i).getCategory()){
+            if(!header.equals(itemList.get(i).getCategory())){
                 DeviceCell sectionCell = new DeviceCell(itemList.get(i).getCategory(), null);
                 sectionCell.setToSectionHeader();
                 tempList.add(sectionCell);
@@ -113,7 +113,11 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
             }
             tempList.add(itemList.get(i));
         }
-
+        String s ="sortAndAddSections: ";
+        for(DeviceCell d : tempList){
+            s += d.getName();
+        }
+        Log.d("activity", s);
         return tempList;
     }
     private void onClickButton(final ExpandableLayout expandableLayout) {
