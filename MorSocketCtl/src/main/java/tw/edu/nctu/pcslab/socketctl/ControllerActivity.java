@@ -541,6 +541,7 @@ public class ControllerActivity extends AppCompatActivity {
                     for(int i = 0; i < listData.size(); i++) {
                         socketList.add(listData.get(i).index.toString());
                     }
+                    socketListAdapter.notifyDataSetChanged();
                     Log.d(TAG, "socketList" + socketList.toString());
                 }
             });
@@ -582,8 +583,6 @@ public class ControllerActivity extends AppCompatActivity {
             @Override
             public void run() {
 
-                updateExpandAbleDeviceView();
-
                 if(currentDevice != null && isDeviceListContains(deviceList, currentDevice) != -1){
                     refreshCurrentDeviceUI = true;
                     // update socketList for device
@@ -594,15 +593,12 @@ public class ControllerActivity extends AppCompatActivity {
                     }
                     Log.d(TAG, socketList.toString());
                     socketListAdapter.notifyDataSetChanged();
-
-//                    Spinner deviceListSpinner = (Spinner) findViewById(R.id.device_list_spinner);
-//                    deviceListSpinner.setSelection(deviceList.indexOf(currentDevice));
-                    Log.d(TAG, "deviceList.contains(currentDevice)");
                 }
                 else{
                     currentDevice = null;
                     refreshCurrentDeviceUI = false;
                 }
+                updateExpandAbleDeviceView();
             }
         });
     }

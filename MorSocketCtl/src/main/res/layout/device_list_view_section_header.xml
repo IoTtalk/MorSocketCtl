@@ -7,9 +7,10 @@
     <TextView
         android:id="@+id/section_header"
         android:layout_width="match_parent"
-        android:layout_height="30dp"
+        android:layout_height="wrap_content"
         android:background="@android:color/darker_gray"
         android:text="Header"
-        android:textSize="17sp"
-        android:padding="4dp" />
+        android:textSize="15sp"
+        android:padding="2dp"
+        android:textAlignment="center" />
 </LinearLayout>

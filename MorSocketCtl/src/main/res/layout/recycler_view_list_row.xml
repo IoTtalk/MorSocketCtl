@@ -7,6 +7,17 @@
     android:layout_height="wrap_content"
     >
 
+    <TextView
+        android:id="@+id/recycler_view_list_row_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:gravity="center"
+        android:padding="1dp"
+        android:textColor="@color/blue"
+        android:textSize="20sp"
+        android:background="@drawable/border"
+        />
     <RelativeLayout
         android:id="@+id/recycler_view_list_row_button"
         android:layout_width="48dp"
@@ -15,27 +26,12 @@
         android:layout_alignParentTop="true"
         android:gravity="center"
         >
-
         <View
             android:layout_width="12dp"
             android:layout_height="12dp"
             android:background="@drawable/triangle"
             />
     </RelativeLayout>
-
-    <TextView
-        android:id="@+id/recycler_view_list_row_text_view"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_alignParentTop="true"
-        android:layout_toLeftOf="@id/recycler_view_list_row_button"
-        android:gravity="center"
-        android:padding="1dp"
-        android:textColor="@color/blue"
-        android:textSize="20sp"
-        android:background="@drawable/border"
-        />
-
 
         <com.github.aakira.expandablelayout.ExpandableLinearLayout
             android:id="@+id/recycler_view_list_row_expandableLayout"

@@ -4,7 +4,6 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,7 +26,6 @@ import tw.edu.nctu.pcslab.sectionlistview.ListAdapter;
 import tw.edu.nctu.pcslab.sectionlistview.DeviceCell;
 import tw.edu.nctu.pcslab.socketctl.ControllerActivity;
 import tw.edu.nctu.pcslab.socketctl.R;
-import tw.edu.nctu.pcslab.socketctl.Socket;
 
 public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerViewRecyclerAdapter.ViewHolder> {
 
@@ -113,11 +111,6 @@ public class RecyclerViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
             }
             tempList.add(itemList.get(i));
         }
-        String s ="sortAndAddSections: ";
-        for(DeviceCell d : tempList){
-            s += d.getName();
-        }
-        Log.d("activity", s);
         return tempList;
     }
     private void onClickButton(final ExpandableLayout expandableLayout) {
