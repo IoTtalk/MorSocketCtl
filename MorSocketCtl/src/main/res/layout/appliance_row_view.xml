@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:id="@+id/appliance_row_text_view"
         android:layout_weight="0.07"
-        android:textSize="30sp"
+        android:textSize="20sp"
         android:textColor="@android:color/black"
         android:padding="2dp"
         android:maxLines="1"

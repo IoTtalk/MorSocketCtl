@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal" android:layout_width="match_parent"
     android:weightSum="1"
     android:layout_height="wrap_content"
@@ -27,18 +26,29 @@
         android:textSize="30sp"
         android:layout_gravity="center_vertical" />
 
-    <Spinner
-        android:layout_height="fill_parent"
-        android:id="@+id/appliance_list_spinner"
-        android:layout_marginStart="13dp"
-        android:layout_gravity="center_vertical"
-        android:layout_width="200dp" />
+    <!--<Spinner-->
+        <!--android:layout_height="fill_parent"-->
+        <!--android:id="@+id/appliance_list_spinner"-->
+        <!--android:layout_marginStart="13dp"-->
+        <!--android:layout_gravity="center_vertical"-->
+        <!--android:layout_width="200dp" />-->
 
     <Switch
-        android:layout_width="fill_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:id="@+id/sswitch"
+        android:theme="@style/switchTheme"
         android:layout_gravity="center_vertical"
-        android:paddingLeft="10dp" />
+        android:paddingLeft="10dp"
+        android:textColorLink="?android:attr/textColorLink" />
+    <Button
+        android:text="------"
+        android:layout_height="wrap_content"
+        android:id="@+id/appliance_list_button"
+        android:layout_marginStart="13dp"
+        android:layout_gravity="center_vertical"
+        android:layout_centerHorizontal="true"
+        style="@style/QDRadiusButton"
+        android:layout_width="fill_parent"
+        android:textSize="24sp" />
 </LinearLayout>

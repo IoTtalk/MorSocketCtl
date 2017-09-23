@@ -11,4 +11,7 @@
     <color name="blue">#00008b</color>
     <color name="indigo">#4b0082</color>
     <color name="gray">#dcdcdc</color>
+    <color name="darkgray">#9D9D9D</color>
+
+
 </resources>

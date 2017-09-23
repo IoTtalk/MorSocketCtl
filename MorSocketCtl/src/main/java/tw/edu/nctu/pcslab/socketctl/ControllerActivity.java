@@ -24,17 +24,25 @@ import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.aakira.expandablelayout.Utils;
 import com.google.gson.Gson;
+import com.qmuiteam.qmui.util.QMUIDisplayHelper;
+import com.qmuiteam.qmui.widget.popup.QMUIListPopup;
+import com.qmuiteam.qmui.widget.popup.QMUIPopup;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
@@ -49,10 +57,10 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -77,6 +85,7 @@ public class ControllerActivity extends AppCompatActivity {
     /* socket list for ui */
     private ArrayList<String> socketList;
     private ArrayAdapter<String> socketListAdapter;
+    private ToneGenerator toneG;
 
     /* device and socket list relation */
     private LinkedHashMap<DeviceCell, ArrayList<Socket>> deviceLinkedHashMap;
@@ -84,6 +93,8 @@ public class ControllerActivity extends AppCompatActivity {
     /* appliance list */
     private ArrayList<String> applianceArrayList;
     private ArrayAdapter<String> applianceListAdapter;
+    private QMUIListPopup applianceListPopup;
+
 
     /* Mqtt client */
     MqttAndroidClient mqttClient;
@@ -102,6 +113,202 @@ public class ControllerActivity extends AppCompatActivity {
     private SharedPreferences.Editor prefsEditor;
     private Gson gson;
 
+
+
+    private void initListPopupIfNeed(int socketListViewIndex) {
+
+        final ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
+        final Switch sswitch = (Switch) socketListView.getChildAt(socketListViewIndex).findViewById(R.id.sswitch);
+        final Button applianceListButton = (Button) socketListView.getChildAt(socketListViewIndex).findViewById(R.id.appliance_list_button);
+        TextView socketRowTextView = (TextView)socketListView.getChildAt(socketListViewIndex).findViewById(R.id.socket_row_text_view);
+        final String index = socketRowTextView.getText().toString();
+        applianceListPopup = new QMUIListPopup(getContext(), QMUIPopup.DIRECTION_NONE, applianceListAdapter);
+        applianceListPopup.create(QMUIDisplayHelper.dp2px(getContext(), 250), QMUIDisplayHelper.dp2px(getContext(), 200), new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                if(position != applianceArrayList.size()-1) {
+                    LinearLayout applianceRowView = (LinearLayout) view;
+                    TextView tv = (TextView) applianceRowView.findViewById(R.id.appliance_row_text_view);
+                    applianceListButton.setText(tv.getText());
+
+                    // update deviceLinkedHashMap
+                    ArrayList<Socket> sockets = getDeviceLinkedHashMapByKey(currentDevice);
+                    for (Socket s : sockets) {
+                        if (s.index.intValue() == Integer.parseInt(index)) {
+                            s.alias = applianceArrayList.get(position);
+                            break;
+                        }
+                    }
+                    sswitch.setVisibility(View.VISIBLE);
+                    // push alias message
+                    JSONObject aliasObj = new JSONObject();
+                    try {
+                        aliasObj.put("id", currentDevice.getName());
+                        aliasObj.put("index", index);
+                        aliasObj.put("alias", applianceArrayList.get(position));
+                        MqttMessage message = new MqttMessage();
+                        message.setPayload(aliasObj.toString().getBytes());
+                        publishMessage(aliasTopic, message);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    applianceListPopup.dismiss();
+                }
+                else{
+                    AlertDialog.Builder builder;
+                    builder = new AlertDialog.Builder(ControllerActivity.this);
+                    View viewInflated = LayoutInflater.from(ControllerActivity.this).inflate(R.layout.dialog_edit_text, (ViewGroup) findViewById(android.R.id.content), false);
+                    final EditText dialog_edit_text = (EditText)viewInflated.findViewById(R.id.dialog_edit_text);
+                    builder.setView(viewInflated);
+                    builder.setTitle(R.string.enter_your_appliance)
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String appliance = dialog_edit_text.getText().toString();
+                                    if(!appliance.isEmpty()) {
+                                        applianceArrayList.add(applianceArrayList.size()-1, appliance);
+                                        String json = gson.toJson(applianceArrayList);
+                                        prefsEditor.putString("applianceArrayList", json);
+                                        prefsEditor.commit();
+                                        Log.d(TAG, applianceArrayList.toString());
+                                        applianceListAdapter.notifyDataSetChanged();
+                                        sswitch.setVisibility(View.VISIBLE);
+                                        // push alias message
+                                        JSONObject aliasObj = new JSONObject();
+                                        try {
+                                            aliasObj.put("id", currentDevice.getName());
+                                            aliasObj.put("index", index);
+                                            aliasObj.put("alias", appliance);
+                                            MqttMessage message = new MqttMessage();
+                                            message.setPayload(aliasObj.toString().getBytes());
+                                            publishMessage(aliasTopic, message);
+                                        } catch (JSONException e) {
+                                            e.printStackTrace();
+                                        }
+                                        applianceListButton.setText(appliance);
+                                    }
+                                }
+                            })
+                            .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    applianceListButton.setText(getResources().getText(R.string.select_appliance));
+                                    sswitch.setVisibility(View.INVISIBLE);
+                                }
+                            }).
+                            setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                @Override
+                                public void onDismiss(DialogInterface dialog) {
+                                    applianceListPopup.dismiss();
+                                }
+                            })
+                            .show();
+                }
+            }
+        });
+        applianceListPopup.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                //mActionButton2.setText(getContext().getResources().getString(R.string.popup_list_action_button_text_show));
+            }
+        });
+    }
+    private void updateSocketListView(Boolean refresh){
+        final ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
+        if(toneG == null)
+            toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+        for(int i = 0; i < socketListView.getChildCount(); i++){
+            final int socketListViewIndex = i;
+            final Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
+            TextView socketRowTextView = (TextView)socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
+            final String index = socketRowTextView.getText().toString();
+            final View socketListViewRowItem = (View)socketListView.getChildAt(i);
+            sswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                    // animation
+                    final Animation animation = new AlphaAnimation(1, 0); // Change alpha from fully visible to invisible
+                    animation.setDuration(100);
+                    animation.setInterpolator(new LinearInterpolator()); // do not alter animation rate
+                    animation.setRepeatCount(1); // Repeat animation infinitely
+                    animation.setRepeatMode(Animation.REVERSE); // Reverse animation at the end so the button will fade back in
+                    socketListViewRowItem.startAnimation(animation);
+
+                    // vibration
+                    setVibrate(100);
+
+                    // sound;
+                    toneG.startTone(ToneGenerator.TONE_CDMA_CALLDROP_LITE, 100);
+
+                    Log.d(TAG, "isChedcked:" + isChecked);
+                    JSONObject data = new JSONObject();
+                    try {
+                        data.put("id", currentDevice.getName());
+                        data.put("index", index);
+                        data.put("state", isChecked);
+                        MqttMessage message = new MqttMessage();
+                        message.setPayload(data.toString().getBytes());
+                        publishMessage(switchTopic, message);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                    // update deviceLinkedHashMap
+                    ArrayList<Socket> sockets = getDeviceLinkedHashMapByKey(currentDevice);
+                    for(Socket s: sockets){
+                        if(s.index.intValue() == Integer.parseInt(index)){
+                            s.state = isChecked;
+                        }
+                    }
+                }
+            });
+            final Button appliancesListButton = (Button) socketListView.getChildAt(i).findViewById(R.id.appliance_list_button);
+
+            //click listener for appliancesListSpinner
+            appliancesListButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    initListPopupIfNeed(socketListViewIndex);
+                    applianceListPopup.setAnimStyle(QMUIPopup.ANIM_AUTO);
+                    applianceListPopup.setPreferredDirection(QMUIPopup.DIRECTION_NONE);
+                    applianceListPopup.show(v);
+                }
+            });
+
+        }
+        if(currentDevice != null && (refreshCurrentDeviceUI || refresh)) {
+            ArrayList<Socket> sl = new ArrayList<Socket>(getDeviceLinkedHashMapByKey(currentDevice));
+            // update socketList row content: alias, state
+            for (int i = 0; i < sl.size(); i++) {
+                Socket socket = sl.get(i);
+                // appliancesArrayList
+                Button appliancesListButton = null;
+                Switch sswitch = null;
+
+                for(int j = 0; j < socketListView.getChildCount(); j++){
+                    TextView t = (TextView) socketListView.getChildAt(j).findViewById(R.id.socket_row_text_view);
+                    if(t.getText().toString().equals(socket.index.toString())) {
+                        appliancesListButton = (Button) socketListView.getChildAt(j).findViewById(R.id.appliance_list_button);
+                        sswitch = (Switch) socketListView.getChildAt(j).findViewById(R.id.sswitch);
+                        break;
+                    }
+                }
+                if(appliancesListButton == null)
+                    continue;
+                if (socket.alias != null) {
+                    int appliancesListSpinnerIndex = isArrayListContains(applianceArrayList, socket.alias);
+                    //Log.d(TAG, new Integer(appliancesListSpinnerIndex).toString());
+                    if (appliancesListSpinnerIndex == -1) { //insert to appliancesArrayList
+                        applianceArrayList.add(applianceArrayList.size() - 1, socket.alias);
+                    }
+                    appliancesListButton.setText(socket.alias);
+                } else {
+                    appliancesListButton.setText(getResources().getString(R.string.select_appliance));
+                    sswitch.setVisibility(View.INVISIBLE);
+                }
+                // sswitch
+                sswitch.setChecked(socket.state);
+            }
+            refreshCurrentDeviceUI = false;
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -132,188 +339,34 @@ public class ControllerActivity extends AppCompatActivity {
         expandAbleDeviceView.setAdapter(expandAbleDeviceViewAdapter);
 
 
+        if(applianceArrayList == null) {
+            ArrayList<String> userCreateAppliances = gson.fromJson(prefs.getString("applianceArrayList", ""), ArrayList.class);
+            if(userCreateAppliances != null)
+                applianceArrayList = new ArrayList<String>(userCreateAppliances);
+            else
+                applianceArrayList = new ArrayList<String>(Arrays.asList(getResources().getStringArray(R.array.appliances)));
+        }
+        applianceListAdapter = new ArrayAdapter<String> (ControllerActivity.this, R.layout.appliance_row_view, R.id.appliance_row_text_view, applianceArrayList);
+
         final ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
         socketList = new ArrayList<String>();
         socketListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.socket_row_view, R.id.socket_row_text_view, socketList);
         socketListView.setAdapter(socketListAdapter);
-        final ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
 
+        socketListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                // TODO Auto-generated method stub
+            }
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                if (scrollState == AbsListView.OnScrollListener.SCROLL_STATE_IDLE) {
+                    updateSocketListView(true);
+                }
+            }
+        });
         socketListView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() { // rebind onCheckedChanged event after Layout has been changed
             @Override
             public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                for(int i = 0; i < socketListView.getChildCount(); i++){
-                    final Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
-                     TextView socketRowTextView = (TextView)socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
-                    final String index = socketRowTextView.getText().toString();
-                    final View socketListViewRowItem = (View)socketListView.getChildAt(i);
-                    sswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-
-                            // animation
-                            final Animation animation = new AlphaAnimation(1, 0); // Change alpha from fully visible to invisible
-                            animation.setDuration(100);
-                            animation.setInterpolator(new LinearInterpolator()); // do not alter animation rate
-                            animation.setRepeatCount(1); // Repeat animation infinitely
-                            animation.setRepeatMode(Animation.REVERSE); // Reverse animation at the end so the button will fade back in
-                            socketListViewRowItem.startAnimation(animation);
-
-                            // vibration
-                            setVibrate(100);
-
-                            // sound;
-                            toneG.startTone(ToneGenerator.TONE_CDMA_CALLDROP_LITE, 100);
-
-                            Log.d(TAG, "isChedcked:" + isChecked);
-                            JSONObject data = new JSONObject();
-                            try {
-                                data.put("id", currentDevice.getName());
-                                data.put("index", index);
-                                data.put("state", isChecked);
-                                MqttMessage message = new MqttMessage();
-                                message.setPayload(data.toString().getBytes());
-                                publishMessage(switchTopic, message);
-                            }catch (Exception e){
-                                e.printStackTrace();
-                            }
-                            // update deviceLinkedHashMap
-                            ArrayList<Socket> sockets = getDeviceLinkedHashMapByKey(currentDevice);
-                            for(Socket s: sockets){
-                                if(s.index.intValue() == Integer.parseInt(index)){
-                                    s.state = isChecked;
-                                }
-                            }
-                        }
-                    });
-                    final Spinner appliancesListSpinner = (Spinner) socketListView.getChildAt(i).findViewById(R.id.appliance_list_spinner);
-                    if(appliancesListSpinner.getAdapter() == null) {
-                        if(applianceArrayList == null) {
-                            ArrayList<String> userCreateAppliances = gson.fromJson(prefs.getString("applianceArrayList", ""), ArrayList.class);
-                            if(userCreateAppliances != null)
-                                applianceArrayList = new ArrayList<String>(userCreateAppliances);
-                            else
-                                applianceArrayList = new ArrayList<String>(Arrays.asList(getResources().getStringArray(R.array.appliances)));
-                        }
-                        if(applianceListAdapter == null) {
-                            applianceListAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.appliance_row_view, R.id.appliance_row_text_view, applianceArrayList);
-                        }
-                        appliancesListSpinner.setAdapter(applianceListAdapter);
-                    }
-                    //click listener for appliancesListSpinner
-                    appliancesListSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> adapterView, View view, final int position, long id) {
-                            if(position == 0){ // Please select an appliance
-                                sswitch.setVisibility(View.INVISIBLE);
-                            }
-                            else if(position == appliancesListSpinner.getCount()-1){ //Others
-                                AlertDialog.Builder builder;
-                                builder = new AlertDialog.Builder(ControllerActivity.this);
-                                View viewInflated = LayoutInflater.from(ControllerActivity.this).inflate(R.layout.dialog_edit_text, (ViewGroup) findViewById(android.R.id.content), false);
-                                final EditText dialog_edit_text = (EditText)viewInflated.findViewById(R.id.dialog_edit_text);
-                                builder.setView(viewInflated);
-                                builder.setTitle(R.string.enter_your_appliance)
-                                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                String appliance = dialog_edit_text.getText().toString();
-                                                if(!appliance.isEmpty()) {
-                                                    applianceArrayList.add(applianceArrayList.size()-1, appliance);
-                                                    String json = gson.toJson(applianceArrayList);
-                                                    prefsEditor.putString("applianceArrayList", json);
-                                                    prefsEditor.commit();
-                                                    Log.d(TAG, applianceArrayList.toString());
-                                                    applianceListAdapter.notifyDataSetChanged();
-                                                    sswitch.setVisibility(View.VISIBLE);
-                                                    // push alias message
-                                                    JSONObject aliasObj = new JSONObject();
-                                                    try {
-                                                        aliasObj.put("id", currentDevice.getName());
-                                                        aliasObj.put("index", index);
-                                                        aliasObj.put("alias", appliance);
-                                                        MqttMessage message = new MqttMessage();
-                                                        message.setPayload(aliasObj.toString().getBytes());
-                                                        publishMessage(aliasTopic, message);
-                                                    } catch (JSONException e) {
-                                                        e.printStackTrace();
-                                                    }
-                                                }
-                                            }
-                                        })
-                                        .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                appliancesListSpinner.setSelection(0);
-                                            }
-                                        })/*.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                            @Override
-                                            public void onDismiss(DialogInterface dialog) {
-                                                appliancesListSpinner.setSelection(0);
-                                            }
-                                        })*/
-                                        .show();
-                            }
-                            else{
-                                // update deviceLinkedHashMap
-                                ArrayList<Socket> sockets = getDeviceLinkedHashMapByKey(currentDevice);
-                                for(Socket s: sockets){
-                                    if(s.index.intValue() == Integer.parseInt(index)){
-                                        s.alias = applianceArrayList.get(position);
-                                        break;
-                                    }
-                                }
-                                sswitch.setVisibility(View.VISIBLE);
-                                // push alias message
-                                JSONObject aliasObj = new JSONObject();
-                                try {
-                                    aliasObj.put("id", currentDevice.getName());
-                                    aliasObj.put("index", index);
-                                    aliasObj.put("alias", applianceArrayList.get(position));
-                                    MqttMessage message = new MqttMessage();
-                                    message.setPayload(aliasObj.toString().getBytes());
-                                    publishMessage(aliasTopic, message);
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-                        @Override
-                        public void onNothingSelected(AdapterView<?> adapterView) {
-                        }
-                    });
-                }
-                if(currentDevice != null && refreshCurrentDeviceUI) {
-                    ArrayList<Socket> sl = new ArrayList<Socket>(getDeviceLinkedHashMapByKey(currentDevice));
-                    // update socketList row content: alias, state
-                    for (int i = 0; i < sl.size(); i++) {
-                        Socket socket = sl.get(i);
-                        ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
-                        // appliancesArrayList
-                        Spinner appliancesListSpinner = null;
-                        for(int j = 0; j < socketListView.getChildCount(); j++){
-                            TextView t = (TextView) socketListView.getChildAt(j).findViewById(R.id.socket_row_text_view);
-                            if(t.getText().toString().equals(socket.index.toString())) {
-                                appliancesListSpinner = (Spinner) socketListView.getChildAt(j).findViewById(R.id.appliance_list_spinner);
-                                break;
-                            }
-                        }
-                        if(appliancesListSpinner == null)
-                            continue;
-                        if (socket.alias != null) {
-                            int appliancesListSpinnerIndex = isArrayListContains(applianceArrayList, socket.alias);
-                            Log.d(TAG, new Integer(appliancesListSpinnerIndex).toString());
-                            if (appliancesListSpinnerIndex != -1) {
-                                appliancesListSpinner.setSelection(appliancesListSpinnerIndex);
-                            } else { //insert to appliancesArrayList
-                                applianceArrayList.add(applianceArrayList.size() - 1, socket.alias);
-                                appliancesListSpinner.setSelection(applianceArrayList.size() - 1);
-                            }
-                        } else {
-                            appliancesListSpinner.setSelection(0);
-                        }
-                        // sswitch
-                        Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
-                        sswitch.setChecked(socket.state);
-                    }
-                    refreshCurrentDeviceUI = false;
-                }
+                updateSocketListView(false);
             }
 
         });

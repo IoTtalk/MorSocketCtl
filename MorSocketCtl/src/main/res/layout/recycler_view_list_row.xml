@@ -4,7 +4,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     >
 
     <TextView
@@ -32,21 +32,20 @@
             android:background="@drawable/triangle"
             />
     </RelativeLayout>
-
+        <!--<ScrollView-->
+            <!--android:layout_height="200dp"-->
+            <!--android:layout_width="fill_parent">-->
         <com.github.aakira.expandablelayout.ExpandableLinearLayout
             android:id="@+id/recycler_view_list_row_expandableLayout"
             android:layout_width="match_parent"
-            android:layout_height="250dp"
+            android:layout_height="match_parent"
             android:layout_below="@id/recycler_view_list_row_text_view"
             android:orientation="vertical"
             >
-
         <ListView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:id="@+id/device_list_view" />
         </com.github.aakira.expandablelayout.ExpandableLinearLayout>
-
-
-
+        <!--</ScrollView>-->
 </RelativeLayout>

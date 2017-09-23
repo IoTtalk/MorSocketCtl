@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_main"
@@ -9,42 +10,21 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="tw.edu.nctu.pcslab.socketctl.ControllerActivity"
-    android:background="#dcdcdc">
-
-    <TextView
-        android:text="MorSocket:"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/deviceNameTextView"
-        android:layout_alignParentStart="true"
-        android:textColor="@android:color/black"
-        android:textSize="18sp" />
-
-    <Spinner
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:id="@+id/device_list_spinner"
-        android:spinnerMode="dialog"
-        android:background="@drawable/border2"
-        android:layout_alignBottom="@+id/deviceNameTextView"
-        android:layout_toEndOf="@+id/deviceNameTextView"
-        android:layout_marginStart="10dp" />
+    android:background="@color/gray">
 
     <android.support.v7.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/device_alias_recycler_View"
-        android:layout_alignParentTop="true"
-        android:paddingBottom="20dp" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/device_alias_recycler_View"
+            android:layout_alignParentTop="true"
+            android:paddingBottom="20dp" />
 
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/socket_list_view"
         android:dividerHeight="10dp"
-        android:divider="#dcdcdc"
+        android:divider="@color/gray"
         android:layout_below="@+id/device_alias_recycler_View"
         android:layout_alignParentEnd="true" />
-
-
 </RelativeLayout>
