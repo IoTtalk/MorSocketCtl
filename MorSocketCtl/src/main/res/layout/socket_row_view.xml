@@ -43,7 +43,7 @@
         android:textColorLink="?android:attr/textColorLink" />
     <Button
         android:text="------"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:id="@+id/appliance_list_button"
         android:layout_marginStart="13dp"
         android:layout_gravity="center_vertical"

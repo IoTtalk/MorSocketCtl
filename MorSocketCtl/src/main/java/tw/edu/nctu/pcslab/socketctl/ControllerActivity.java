@@ -33,14 +33,13 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
-import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.github.aakira.expandablelayout.Utils;
 import com.google.gson.Gson;
 import com.qmuiteam.qmui.util.QMUIDisplayHelper;
+import com.qmuiteam.qmui.widget.QMUITopBar;
 import com.qmuiteam.qmui.widget.popup.QMUIListPopup;
 import com.qmuiteam.qmui.widget.popup.QMUIPopup;
 
@@ -313,6 +312,7 @@ public class ControllerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_controller);
+
         context = ControllerActivity.this;
         prefs = getPreferences(MODE_PRIVATE);
         prefsEditor = prefs.edit();

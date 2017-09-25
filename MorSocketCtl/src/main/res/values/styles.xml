@@ -3,11 +3,19 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="QMUI.Compat">
         <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:dropDownListViewStyle">@style/SpinnerStyle</item>
-        <item name="android:spinnerDropDownItemStyle">@style/SpinnerStyle</item>
+        <!--<item name="colorPrimary">@color/colorPrimary</item>-->
+        <item name="colorPrimary">#5A9AEF</item> <!-- Aqua -->
+        <item name="android:statusBarColor">#5A9AEF</item>
+        <item name="titleTextColor">#ffffff</item>
+        <item name="drawerArrowStyle">@style/DrawerArrowStyle</item>
+
+        <!--<item name="colorAccent">@color/colorAccent</item>-->
+        <!--<item name="android:dropDownListViewStyle">@style/SpinnerStyle</item>-->
+        <!--<item name="android:spinnerDropDownItemStyle">@style/SpinnerStyle</item>-->
+    </style>
+    <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">
+        <item name="spinBars">true</item>
+        <item name="color">@color/white</item>
     </style>
     <!--<style name="SpinnerStyle" parent="Widget.AppCompat.ListView.DropDown">-->
         <!--<item name="android:divider">#d1d1d1</item>-->
