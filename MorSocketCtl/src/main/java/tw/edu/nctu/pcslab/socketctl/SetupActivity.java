@@ -54,7 +54,8 @@ import tw.org.cic.protocol.SampleGattAttributes;
 
 public class SetupActivity extends AppCompatActivity {
 
-    private final String bleDeviceName = "MorSensor";
+    private final String bleDeviceNamePrfix = "MorSocket";
+    private final String bleDeviceNameSlave = "MorSocket_S";
     private final String TAG = "SetupActivity";
 
     /* scan BLE devices */
@@ -517,7 +518,6 @@ public class SetupActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context c, Intent intent) {
             List<android.net.wifi.ScanResult> res = wfm.getScanResults();
-
             Log.d(TAG,res.toString());
             for(ScanResult s : res){
                 if(!foundSSIDs.contains(s.SSID)) {
@@ -636,12 +636,12 @@ public class SetupActivity extends AppCompatActivity {
     private void scanMorSocket(boolean startScan){
         if(startScan){
             ScanSettings.Builder settingsBuilder = new ScanSettings.Builder();
-            ScanFilter.Builder filterBuilder = new ScanFilter.Builder();
-            ArrayList<ScanFilter> filters = new ArrayList<ScanFilter>();
-            ScanFilter filter = filterBuilder.setDeviceName(bleDeviceName).build();
-            filters.add(filter);
+//            ScanFilter.Builder filterBuilder = new ScanFilter.Builder();
+//            ArrayList<ScanFilter> filters = new ArrayList<ScanFilter>();
+//            ScanFilter filter = filterBuilder.setDeviceName(bleDeviceName).build();
+//            filters.add(filter);
             if(bts != null && bta.isEnabled())
-                bts.startScan(filters, settingsBuilder.build(), scanCallback);
+                bts.startScan(null, settingsBuilder.build(), scanCallback);
         }
         else{
             if(bts != null && bta.isEnabled())
@@ -652,7 +652,8 @@ public class SetupActivity extends AppCompatActivity {
         @Override
         public void onScanResult(int callbackType, android.bluetooth.le.ScanResult scanResult) {
             BluetoothDevice device = scanResult.getDevice();
-            if(foundDevices.contains(device.getAddress()))
+            if(foundDevices.contains(device.getAddress()) || device.getName().equals(bleDeviceNameSlave)
+                    || !device.getName().startsWith(bleDeviceNamePrfix))
                 return;
             foundDevices.add(device.getAddress());
             String deviceInfo = device.getName() + "\n" + device.getAddress();
