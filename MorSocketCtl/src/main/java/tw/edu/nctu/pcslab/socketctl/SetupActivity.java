@@ -652,8 +652,9 @@ public class SetupActivity extends AppCompatActivity {
         @Override
         public void onScanResult(int callbackType, android.bluetooth.le.ScanResult scanResult) {
             BluetoothDevice device = scanResult.getDevice();
-            if(foundDevices.contains(device.getAddress()) || device.getName().equals(bleDeviceNameSlave)
-                    || !device.getName().startsWith(bleDeviceNamePrfix))
+            if(foundDevices.contains(device.getAddress()) || device.getName() == null
+                    || device.getName().equals(bleDeviceNameSlave)
+                    || !(device.getName().startsWith(bleDeviceNamePrfix)))
                 return;
             foundDevices.add(device.getAddress());
             String deviceInfo = device.getName() + "\n" + device.getAddress();
