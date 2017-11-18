@@ -21,6 +21,7 @@
     <string name="not_select_morsockets">Please select MorSockets</string>
     <string name="not_select_ap">Please select a AP</string>
     <string name="not_enter_ap_pwd">Please enter AP password</string>
+    <string name="not_select_morsockets_location">Please select a location</string>
     <string name="incorrect_ap_pwd">Incorrect AP password</string>
     <string name="server_error">Server error</string>
     <string name="unknown_error">Unknown error</string>
@@ -39,4 +40,12 @@
         <item>Others</item>
     </string-array>
     <string name="enter_your_appliance">Enter your appliance</string>
+    <string-array name="locations">
+        <item>Living Room</item>
+        <item>Dining Room</item>
+        <item>Bath Room</item>
+        <item>Others</item>
+    </string-array>
+    <string name="enter_your_socket_location">Enter your MorSocket location</string>
+
 </resources>

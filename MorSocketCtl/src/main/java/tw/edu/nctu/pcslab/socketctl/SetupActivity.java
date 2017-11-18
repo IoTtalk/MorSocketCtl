@@ -9,7 +9,6 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -18,6 +17,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -29,6 +29,7 @@ import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -43,7 +44,16 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -86,21 +96,33 @@ public class SetupActivity extends AppCompatActivity {
 
     /* WIFI information*/
     private String ssid = null;
-    private String ip = "192.168.1.219";
+    private String ip = "192.168.11.100";
     private String port = "7654";
     private String channel = "00";
+
+    /* Location */
+    private ArrayList<String> socketLocationArrayList;
+    private ArrayAdapter<String> socketLocationAdapter;
+
+    /* Save and load data */
+    private SharedPreferences prefs;
+    private SharedPreferences.Editor prefsEditor;
+    private Gson gson;
+
+    private String restFulPort = "8899";
+    private String setupDeviceRoomTopic = "SetupDeviceRoom";
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setup);
+        
         // check if mobile phone support BLE device
         if(!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
             Toast.makeText(getBaseContext(), R.string.no_sup_ble, Toast.LENGTH_SHORT).show();
             finish();
         }
-
         btm = (BluetoothManager)this.getSystemService(BLUETOOTH_SERVICE);
         bta = btm.getAdapter();
         if (!bta.isEnabled()) {
@@ -171,6 +193,68 @@ public class SetupActivity extends AppCompatActivity {
             }
         });
 
+        prefs = getPreferences(MODE_PRIVATE);
+        prefsEditor = prefs.edit();
+        gson = new Gson();
+
+        // socketLocationSpinner adapter bind
+        if(socketLocationArrayList == null) {
+            ArrayList<String> userCreateAppliances = gson.fromJson(prefs.getString("socketLocationArrayList", ""), ArrayList.class);
+            if(userCreateAppliances != null)
+                socketLocationArrayList = new ArrayList<String>(userCreateAppliances);
+            else
+                socketLocationArrayList = new ArrayList<String>(Arrays.asList(getResources().getStringArray(R.array.locations)));
+        }
+        final Spinner socketLocationSpinner = (Spinner) findViewById(R.id.socket_loaction_spinner);
+        socketLocationAdapter = new ArrayAdapter<String>(getBaseContext(), R.layout.wifi_row_view, R.id.wifi_row_text_view, socketLocationArrayList);
+        socketLocationSpinner.setAdapter(socketLocationAdapter);
+
+        // click listener for apListSpinner
+        socketLocationSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                if(position == socketLocationArrayList.size()-1) {
+                    AlertDialog.Builder builder;
+                    builder = new AlertDialog.Builder(SetupActivity.this);
+                    View viewInflated = LayoutInflater.from(SetupActivity.this).inflate(R.layout.dialog_edit_text, (ViewGroup) findViewById(android.R.id.content), false);
+                    final EditText dialog_edit_text = (EditText)viewInflated.findViewById(R.id.dialog_edit_text);
+                    builder.setView(viewInflated);
+                    builder.setTitle(R.string.enter_your_socket_location)
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String location = dialog_edit_text.getText().toString();
+                                    if(!location.isEmpty()) {
+                                        socketLocationArrayList.add(socketLocationArrayList.size()-1, location);
+                                        String json = gson.toJson(socketLocationArrayList);
+                                        prefsEditor.putString("socketLocationArrayList", json);
+                                        prefsEditor.commit();
+                                        Log.d(TAG, socketLocationArrayList.toString());
+                                        socketLocationAdapter.notifyDataSetChanged();
+                                        socketLocationSpinner.setSelection(socketLocationArrayList.size()-2);
+                                    }
+                                }
+                            })
+                            .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+//                                    applianceListButton.setText(getResources().getText(R.string.select_appliance));
+//                                    sswitch.setVisibility(View.INVISIBLE);
+                                }
+                            })
+//                            setOnDismissListener(new DialogInterface.OnDismissListener() {
+//                                @Override
+//                                public void onDismiss(DialogInterface dialog) {
+//                                    applianceListPopup.dismiss();
+//                                }
+//                            })
+                            .show();
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+            }
+        });
+
+
         // click listener for setupBtn.
         final Button setupBtn = (Button) findViewById(R.id.setup_btn);
         setupBtn.setOnClickListener(new View.OnClickListener() {
@@ -194,6 +278,40 @@ public class SetupActivity extends AppCompatActivity {
                     Toast.makeText(getBaseContext(), R.string.not_enter_ap_pwd, Toast.LENGTH_SHORT).show();
                     return;
                 }
+                if(socketLocationSpinner.getSelectedItem().toString().equals("") || socketLocationSpinner.getSelectedItem().toString().equals("Others")){
+                    Toast.makeText(getBaseContext(), R.string.not_select_morsockets_location, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                HandlerThread httpPostThread = new HandlerThread("httpPostThread");
+                httpPostThread.start();
+                Handler httpPostHandler = new Handler(httpPostThread.getLooper());
+                httpPostHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        HttpClient httpClient = HttpClientBuilder.create().build(); //Use this instead
+                        try {
+                            String location = socketLocationSpinner.getSelectedItem().toString();
+                            HttpPost request = new HttpPost("http://" + ip + ":" + restFulPort + "/" + setupDeviceRoomTopic);
+                            StringEntity params =new StringEntity("{\"id\":\"f119d466\",\"location\":\""+ location +"\"}");
+                            request.setHeader("Content-type", "application/json");
+                            request.setEntity(params);
+                            HttpResponse response = httpClient.execute(request);
+                            Log.d(TAG, "http://" + ip + ":" + restFulPort + "/" + setupDeviceRoomTopic);
+                            Log.d(TAG, response.toString());//handle response here...
+
+                        }catch (Exception ex) {
+                            ex.printStackTrace();
+                            Log.d(TAG, ex.toString());
+                            //handle exception here
+                        } finally {
+                            //Deprecated
+                            httpClient.getConnectionManager().shutdown();
+                        }
+
+                    }
+                });
+
                 currentStep = 0;
                 gattServiceIntent = new Intent(SetupActivity.this, BluetoothLeService.class);
                 SetupActivity.this.bindService(gattServiceIntent, bleServiceConnection, BIND_AUTO_CREATE);
@@ -652,9 +770,11 @@ public class SetupActivity extends AppCompatActivity {
         @Override
         public void onScanResult(int callbackType, android.bluetooth.le.ScanResult scanResult) {
             BluetoothDevice device = scanResult.getDevice();
-            if(foundDevices.contains(device.getAddress()) || device.getName() == null
-                    || device.getName().equals(bleDeviceNameSlave)
-                    || !(device.getName().startsWith(bleDeviceNamePrfix)))
+//            if(foundDevices.contains(device.getAddress()) || device.getName() == null
+//                    || device.getName().equals(bleDeviceNameSlave)
+//                    || !(device.getName().startsWith(bleDeviceNamePrfix)))
+//                return;
+            if(foundDevices.contains(device.getAddress()))
                 return;
             foundDevices.add(device.getAddress());
             String deviceInfo = device.getName() + "\n" + device.getAddress();

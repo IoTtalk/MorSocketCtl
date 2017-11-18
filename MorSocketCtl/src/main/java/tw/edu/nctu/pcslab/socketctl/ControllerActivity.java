@@ -96,8 +96,8 @@ public class ControllerActivity extends AppCompatActivity {
 
 
     /* Mqtt client */
-    MqttAndroidClient mqttClient;
-    private String mqttUri = "tcp://192.168.1.219:1883";
+    public MqttAndroidClient mqttClient;
+    private String mqttUri = "tcp://192.168.11.100:1883";
     private String clientId = "MorSocketAndroidClient";
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
@@ -106,7 +106,6 @@ public class ControllerActivity extends AppCompatActivity {
     private String syncDeviceInfoTopic = "SyncDeviceInfo"; // when app open
     private String switchTopic = "Switch";
     private String aliasTopic = "Alias";
-
     /* Save and load data */
     private SharedPreferences  prefs;
     private SharedPreferences.Editor prefsEditor;
