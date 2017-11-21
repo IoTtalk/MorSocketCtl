@@ -97,7 +97,8 @@ public class ControllerActivity extends AppCompatActivity {
 
     /* Mqtt client */
     public MqttAndroidClient mqttClient;
-    private String mqttUri = "tcp://192.168.11.100:1883";
+//    private String mqttUri = "tcp://192.168.1.219:1883";
+    private String mqttUri = "tcp://140.113.215.17:1883";
     private String clientId = "MorSocketAndroidClient";
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
@@ -627,7 +628,26 @@ public class ControllerActivity extends AppCompatActivity {
         JSONObject jsonObj = new JSONObject(jsonString);
         Log.d(TAG, jsonString);
         JSONArray devices = jsonObj.getJSONArray("devices");
-        for(int i = 0; i < devices.length(); i++){
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                if (currentDevice != null) {
+                    refreshCurrentDeviceUI = true;
+                    // update socketList for device
+                    socketList.clear();
+                    socketListAdapter.notifyDataSetChanged();
+                    deviceList.clear();
+                    expandAbleDeviceViewAdapter.notifyDataSetChanged();
+                } else {
+                    currentDevice = null;
+                    refreshCurrentDeviceUI = false;
+                }
+                updateExpandAbleDeviceView();
+            }
+        });
+
+        for (int i = 0; i < devices.length(); i++) {
             JSONObject deviceObj = devices.getJSONObject(i);
             parseDeviceInfo(deviceObj);
         }
@@ -635,24 +655,24 @@ public class ControllerActivity extends AppCompatActivity {
             @Override
             public void run() {
 
-                if(currentDevice != null && isDeviceListContains(deviceList, currentDevice) != -1){
+                if (currentDevice != null && isDeviceListContains(deviceList, currentDevice) != -1) {
                     refreshCurrentDeviceUI = true;
                     // update socketList for device
                     ArrayList<Socket> sl = new ArrayList<Socket>(getDeviceLinkedHashMapByKey(currentDevice));
                     socketList.clear();
-                    for(int i = 0; i < sl.size(); i++) {
+                    for (int i = 0; i < sl.size(); i++) {
                         socketList.add(sl.get(i).index.toString());
                     }
                     Log.d(TAG, socketList.toString());
                     socketListAdapter.notifyDataSetChanged();
-                }
-                else{
+                } else {
                     currentDevice = null;
                     refreshCurrentDeviceUI = false;
                 }
                 updateExpandAbleDeviceView();
             }
         });
+
     }
     public void publishMessage(String publishTopic, MqttMessage message){
         try {
