@@ -30,6 +30,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
@@ -62,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.UUID;
 
 import tw.edu.nctu.pcslab.recyclerview.ItemModel;
 import tw.edu.nctu.pcslab.recyclerview.RecyclerViewRecyclerAdapter;
@@ -97,9 +99,9 @@ public class ControllerActivity extends AppCompatActivity {
 
     /* Mqtt client */
     public MqttAndroidClient mqttClient;
-//    private String mqttUri = "tcp://192.168.1.219:1883";
+//    private String mqttUri = "tcp://192.168.51.25:1883";
     private String mqttUri = "tcp://140.113.215.17:1883";
-    private String clientId = "MorSocketAndroidClient";
+    private String clientId = UUID.randomUUID().toString();
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
     private String devicesInfoTopic = "DevicesInfo"; // receive after SyncDeviceInfo
@@ -217,9 +219,11 @@ public class ControllerActivity extends AppCompatActivity {
         for(int i = 0; i < socketListView.getChildCount(); i++){
             final int socketListViewIndex = i;
             final Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
+            final ImageView sswitchIcon = (ImageView) socketListView.getChildAt(i).findViewById(R.id.sswitch_icon);
+            final Button appliancesListButton = (Button) socketListView.getChildAt(i).findViewById(R.id.appliance_list_button);
             TextView socketRowTextView = (TextView)socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
             final String index = socketRowTextView.getText().toString();
-            final View socketListViewRowItem = (View)socketListView.getChildAt(i);
+            final View socketListViewRowItem = socketListView.getChildAt(i);
             sswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
@@ -258,7 +262,20 @@ public class ControllerActivity extends AppCompatActivity {
                     }
                 }
             });
-            final Button appliancesListButton = (Button) socketListView.getChildAt(i).findViewById(R.id.appliance_list_button);
+            sswitchIcon.setOnClickListener(new View.OnClickListener(){
+                public void onClick(View view){
+                    if(sswitch.isEnabled() && appliancesListButton.isEnabled()){
+                        sswitch.setEnabled(false);
+                        appliancesListButton.setEnabled(false);
+                        socketListViewRowItem.setAlpha(0.3f);
+                    }
+                    else {
+                        sswitch.setEnabled(true);
+                        appliancesListButton.setEnabled(true);
+                        socketListViewRowItem.setAlpha(1.0f);
+                    }
+                }
+            });
 
             //click listener for appliancesListSpinner
             appliancesListButton.setOnClickListener(new View.OnClickListener() {
@@ -414,7 +431,7 @@ public class ControllerActivity extends AppCompatActivity {
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
         mqttConnectOptions.setConnectionTimeout(10);
-        mqttConnectOptions.setKeepAliveInterval(30);
+//        mqttConnectOptions.setKeepAliveInterval(30);
         try {
             //addToHistory("Connecting to " + serverUri);
             mqttClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
@@ -629,23 +646,24 @@ public class ControllerActivity extends AppCompatActivity {
         Log.d(TAG, jsonString);
         JSONArray devices = jsonObj.getJSONArray("devices");
 
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                if (currentDevice != null) {
-                    refreshCurrentDeviceUI = true;
-                    // update socketList for device
-                    socketList.clear();
-                    socketListAdapter.notifyDataSetChanged();
-                    deviceList.clear();
-                    expandAbleDeviceViewAdapter.notifyDataSetChanged();
-                } else {
-                    currentDevice = null;
-                    refreshCurrentDeviceUI = false;
-                }
-                updateExpandAbleDeviceView();
-            }
-        });
+//        new Handler(Looper.getMainLooper()).post(new Runnable() {
+//            @Override
+//            public void run() {
+////                if (currentDevice != null) {
+////                    refreshCurrentDeviceUI = true;
+//                    // update socketList for device
+//                    socketList.clear();
+//                    socketListAdapter.notifyDataSetChanged();
+//                    deviceList.clear();
+////                    expandAbleDeviceViewAdapter.notifyDataSetChanged();
+////                } else {
+////                    refreshCurrentDeviceUI = false;
+////                }
+////                currentDevice = null;
+////                updateExpandAbleDeviceView();
+////                updateExpandAbleDeviceView();
+//            }
+//        });
 
         for (int i = 0; i < devices.length(); i++) {
             JSONObject deviceObj = devices.getJSONObject(i);
@@ -654,7 +672,7 @@ public class ControllerActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-
+                updateExpandAbleDeviceView();
                 if (currentDevice != null && isDeviceListContains(deviceList, currentDevice) != -1) {
                     refreshCurrentDeviceUI = true;
                     // update socketList for device
@@ -669,7 +687,7 @@ public class ControllerActivity extends AppCompatActivity {
                     currentDevice = null;
                     refreshCurrentDeviceUI = false;
                 }
-                updateExpandAbleDeviceView();
+
             }
         });
 

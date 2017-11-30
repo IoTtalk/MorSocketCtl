@@ -96,7 +96,7 @@ public class SetupActivity extends AppCompatActivity {
 
     /* WIFI information*/
     private String ssid = null;
-//    private String ip = "192.168.1.219";
+//    private String ip = "192.168.51.25";
     private String ip = "140.113.215.17";
     private String port = "7654";
     private String channel = "00";

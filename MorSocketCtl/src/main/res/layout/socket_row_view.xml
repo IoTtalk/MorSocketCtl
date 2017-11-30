@@ -13,6 +13,7 @@
         android:scaleType="fitCenter"
         android:cropToPadding="false"
         android:adjustViewBounds="true"
+        android:clickable="true"
         android:background="@drawable/sswitch"
         android:layout_height="50dp"
         android:layout_gravity="center_vertical"/>
