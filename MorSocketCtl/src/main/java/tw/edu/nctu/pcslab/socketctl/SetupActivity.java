@@ -294,7 +294,7 @@ public class SetupActivity extends AppCompatActivity {
                         try {
                             String location = socketLocationSpinner.getSelectedItem().toString();
                             HttpPost request = new HttpPost("http://" + ip + ":" + restFulPort + "/" + setupDeviceRoomTopic);
-                            StringEntity params =new StringEntity("{\"id\":\"f119d466\",\"location\":\""+ location +"\"}");
+                            StringEntity params =new StringEntity("{\"location\":\""+ location +"\"}");
                             request.setHeader("Content-type", "application/json");
                             request.setEntity(params);
                             HttpResponse response = httpClient.execute(request);
