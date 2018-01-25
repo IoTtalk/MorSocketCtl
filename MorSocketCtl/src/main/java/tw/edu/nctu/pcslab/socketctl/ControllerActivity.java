@@ -108,6 +108,7 @@ public class ControllerActivity extends AppCompatActivity {
     // publish
     private String syncDeviceInfoTopic = "SyncDeviceInfo"; // when app open
     private String switchTopic = "Switch";
+    private String switchDisable = "SwitchDisable";
     private String aliasTopic = "Alias";
     /* Save and load data */
     private SharedPreferences  prefs;
@@ -265,15 +266,38 @@ public class ControllerActivity extends AppCompatActivity {
             sswitchIcon.setOnClickListener(new View.OnClickListener(){
                 public void onClick(View view){
                     if(sswitch.isEnabled() && appliancesListButton.isEnabled()){
+                        JSONObject switchDisableObj = new JSONObject();
+                        try {
+                            switchDisableObj.put("id", currentDevice.getName());
+                            switchDisableObj.put("index", index);
+                            switchDisableObj.put("disable", true);
+                            MqttMessage message = new MqttMessage();
+                            message.setPayload(switchDisableObj.toString().getBytes());
+                            publishMessage(switchDisable, message);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                         sswitch.setEnabled(false);
                         appliancesListButton.setEnabled(false);
                         socketListViewRowItem.setAlpha(0.3f);
                     }
                     else {
+                        JSONObject switchDisableObj = new JSONObject();
+                        try {
+                            switchDisableObj.put("id", currentDevice.getName());
+                            switchDisableObj.put("index", index);
+                            switchDisableObj.put("disable", false);
+                            MqttMessage message = new MqttMessage();
+                            message.setPayload(switchDisableObj.toString().getBytes());
+                            publishMessage(switchDisable, message);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                         sswitch.setEnabled(true);
                         appliancesListButton.setEnabled(true);
                         socketListViewRowItem.setAlpha(1.0f);
                     }
+                    Log.d(TAG, "SwitchDisable" + index.toString());
                 }
             });
             //click listener for appliancesListSpinner
