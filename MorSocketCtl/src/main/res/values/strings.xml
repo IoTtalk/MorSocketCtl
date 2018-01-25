@@ -30,7 +30,7 @@
     <!--controller activity-->
     <string name="device_disconnected">Device disconnected</string>
     <string name="select_morsocket_placeholder">Please select a Morsocket</string>
-    <string name="select_appliance">Please select an appliance</string>
+    <string name="select_appliance">Select</string>
     <string-array name="appliances">
         <item>Fan</item>
         <item>TV</item>
