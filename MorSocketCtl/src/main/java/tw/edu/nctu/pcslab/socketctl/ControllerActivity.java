@@ -276,7 +276,6 @@ public class ControllerActivity extends AppCompatActivity {
                     }
                 }
             });
-
             //click listener for appliancesListSpinner
             appliancesListButton.setOnClickListener(new View.OnClickListener() {
                 @Override

@@ -22,7 +22,7 @@
     <string name="not_select_ap">Please select a AP</string>
     <string name="not_enter_ap_pwd">Please enter AP password</string>
     <string name="not_select_morsockets_location">Please select a location</string>
-    <string name="incorrect_ap_pwd">Incorrect AP password</string>
+    <string name="incorrect_ap_pwd">AP setup error</string>
     <string name="server_error">Server error</string>
     <string name="unknown_error">Unknown error</string>
     <string name="setup_success">Setup success</string>
