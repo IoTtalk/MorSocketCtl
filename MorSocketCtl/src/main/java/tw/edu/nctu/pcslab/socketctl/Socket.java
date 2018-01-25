@@ -8,9 +8,11 @@ public class Socket {
     public String alias;
     public Integer index;
     public Boolean state; //true:on, false:off
-    Socket(String alias, Integer index, Boolean state){
+    public Boolean disable;
+    Socket(String alias, Integer index, Boolean state, Boolean disable){
         this.alias = alias;
         this.index = index;
         this.state = state;
+        this.disable = disable;
     }
 }

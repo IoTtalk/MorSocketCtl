@@ -320,12 +320,14 @@ public class ControllerActivity extends AppCompatActivity {
                 // appliancesArrayList
                 Button appliancesListButton = null;
                 Switch sswitch = null;
+                View socketListViewRowItem = null;
 
                 for(int j = 0; j < socketListView.getChildCount(); j++){
                     TextView t = (TextView) socketListView.getChildAt(j).findViewById(R.id.socket_row_text_view);
                     if(t.getText().toString().equals(socket.index.toString())) {
                         appliancesListButton = (Button) socketListView.getChildAt(j).findViewById(R.id.appliance_list_button);
                         sswitch = (Switch) socketListView.getChildAt(j).findViewById(R.id.sswitch);
+                        socketListViewRowItem = socketListView.getChildAt(j);
                         break;
                     }
                 }
@@ -344,6 +346,11 @@ public class ControllerActivity extends AppCompatActivity {
                 }
                 // sswitch
                 sswitch.setChecked(socket.state);
+                if(socket.disable) {
+                    sswitch.setEnabled(false);
+                    appliancesListButton.setEnabled(false);
+                    socketListViewRowItem.setAlpha(0.3f);
+                }
             }
             refreshCurrentDeviceUI = false;
         }
@@ -609,9 +616,9 @@ public class ControllerActivity extends AppCompatActivity {
                 JSONObject s = sockets.getJSONObject(i);
                 Socket socket;
                 if(s.isNull("alias"))
-                    socket = new Socket(null,  new Integer(s.getInt("index")), s.getBoolean("state"));
+                    socket = new Socket(null,  new Integer(s.getInt("index")), s.getBoolean("state"), s.getBoolean("disable"));
                 else
-                    socket = new Socket(s.getString("alias"),  new Integer(s.getInt("index")), s.getBoolean("state"));
+                    socket = new Socket(s.getString("alias"),  new Integer(s.getInt("index")), s.getBoolean("state"), s.getBoolean("disable"));
                 listData.add(socket);
             }
         }
@@ -650,9 +657,9 @@ public class ControllerActivity extends AppCompatActivity {
                 JSONObject s = sockets.getJSONObject(i);
                 Socket socket;
                 if(s.isNull("alias"))
-                    socket = new Socket(null,  new Integer(s.getInt("index")), s.getBoolean("state"));
+                    socket = new Socket(null,  new Integer(s.getInt("index")), s.getBoolean("state"), s.getBoolean("disable"));
                 else
-                    socket = new Socket(s.getString("alias"),  new Integer(s.getInt("index")), s.getBoolean("state"));
+                    socket = new Socket(s.getString("alias"),  new Integer(s.getInt("index")), s.getBoolean("state"), s.getBoolean("disable"));
                 listData.add(socket);
             }
         }
