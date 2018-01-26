@@ -641,6 +641,7 @@ public class ControllerActivity extends AppCompatActivity {
                     for(int i = 0; i < listData.size(); i++) {
                         socketList.add(listData.get(i).index.toString());
                     }
+                    refreshCurrentDeviceUI = true;
                     socketListAdapter.notifyDataSetChanged();
                     Log.d(TAG, "socketList" + socketList.toString());
                 }
