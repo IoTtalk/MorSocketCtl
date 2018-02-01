@@ -19,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
@@ -105,6 +106,7 @@ public class ControllerActivity extends AppCompatActivity {
     // subscribe
     private String deviceInfoTopic = "DeviceInfo"; // when there is a device online
     private String devicesInfoTopic = "DevicesInfo"; // receive after SyncDeviceInfo
+    private String switchesInfoTopic = "SwitchesInfo";
     // publish
     private String syncDeviceInfoTopic = "SyncDeviceInfo"; // when app open
     private String switchTopic = "Switch";
@@ -213,6 +215,7 @@ public class ControllerActivity extends AppCompatActivity {
             }
         });
     }
+
     private void updateSocketListView(Boolean refresh){
         final ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
         if(toneG == null)
@@ -225,7 +228,8 @@ public class ControllerActivity extends AppCompatActivity {
             TextView socketRowTextView = (TextView)socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
             final String index = socketRowTextView.getText().toString();
             final View socketListViewRowItem = socketListView.getChildAt(i);
-            sswitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            sswitch.setTag(null);
+            CompoundButton.OnCheckedChangeListener sswitchCheckedChangeListener = new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                     // animation
@@ -241,19 +245,21 @@ public class ControllerActivity extends AppCompatActivity {
 
                     // sound;
                     toneG.startTone(ToneGenerator.TONE_CDMA_CALLDROP_LITE, 100);
-
                     Log.d(TAG, "isChedcked:" + isChecked);
-                    JSONObject data = new JSONObject();
-                    try {
-                        data.put("id", currentDevice.getName());
-                        data.put("index", index);
-                        data.put("state", isChecked);
-                        MqttMessage message = new MqttMessage();
-                        message.setPayload(data.toString().getBytes());
-                        publishMessage(switchTopic, message);
-                    }catch (Exception e){
-                        e.printStackTrace();
+                    if(sswitch.getTag() != null && sswitch.getTag().equals("touchByUser")) {
+                        JSONObject data = new JSONObject();
+                        try {
+                            data.put("id", currentDevice.getName());
+                            data.put("index", index);
+                            data.put("state", isChecked);
+                            MqttMessage message = new MqttMessage();
+                            message.setPayload(data.toString().getBytes());
+                            publishMessage(switchTopic, message);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
+                    sswitch.setTag(null);
                     // update deviceLinkedHashMap
                     ArrayList<Socket> sockets = getDeviceLinkedHashMapByKey(currentDevice);
                     for(Socket s: sockets){
@@ -262,7 +268,15 @@ public class ControllerActivity extends AppCompatActivity {
                         }
                     }
                 }
+            };
+            sswitch.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    sswitch.setTag("touchByUser");
+                    return false;
+                }
             });
+            sswitch.setOnCheckedChangeListener(sswitchCheckedChangeListener);
             sswitchIcon.setOnClickListener(new View.OnClickListener(){
                 public void onClick(View view){
                     if(sswitch.isEnabled() && appliancesListButton.isEnabled()){
@@ -345,7 +359,8 @@ public class ControllerActivity extends AppCompatActivity {
                     sswitch.setVisibility(View.INVISIBLE);
                 }
                 // sswitch
-                sswitch.setChecked(socket.state);
+                if(sswitch.isChecked() != socket.state)
+                    sswitch.setChecked(socket.state);
                 if(socket.disable) {
                     sswitch.setEnabled(false);
                     appliancesListButton.setEnabled(false);
@@ -430,6 +445,7 @@ public class ControllerActivity extends AppCompatActivity {
                     // Because Clean Session is true, we need to re-subscribe
                     subscribeToTopic(deviceInfoTopic);
                     subscribeToTopic(devicesInfoTopic);
+                    subscribeToTopic(switchesInfoTopic);
                     MqttMessage message = new MqttMessage();
                     message.setPayload("synchronize".getBytes());
                     publishMessage(syncDeviceInfoTopic, message);
@@ -475,6 +491,7 @@ public class ControllerActivity extends AppCompatActivity {
                     mqttClient.setBufferOpts(disconnectedBufferOptions);
                     subscribeToTopic(deviceInfoTopic);
                     subscribeToTopic(devicesInfoTopic);
+                    subscribeToTopic(switchesInfoTopic);
                     MqttMessage message = new MqttMessage();
                     message.setPayload("synchronize".getBytes());
                     publishMessage(syncDeviceInfoTopic, message);
@@ -524,6 +541,9 @@ public class ControllerActivity extends AppCompatActivity {
                     }
                     else if(topic.equals(devicesInfoTopic)) {
                         parseDevicesInfo(message);
+                    }
+                    else if(topic.equals(switchesInfoTopic)){
+                        parseSwitchesInfo(message);
                     }
                 }
             });
@@ -647,7 +667,6 @@ public class ControllerActivity extends AppCompatActivity {
                 }
             });
         }
-
     }
     private void parseDeviceInfo(JSONObject jsonObj) throws Exception{
         final DeviceCell deviceCell = new DeviceCell(jsonObj.getString("id"), jsonObj.getString("room"));
@@ -723,6 +742,37 @@ public class ControllerActivity extends AppCompatActivity {
         });
 
     }
+    private void parseSwitchesInfo(MqttMessage message) throws Exception {
+        String jsonString = new String(message.getPayload());
+        final JSONObject jsonObj = new JSONObject(jsonString);
+        Log.d(TAG, jsonString);
+        if(currentDevice.getName().equals(jsonObj.getString("id"))){
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JSONArray sockets = jsonObj.getJSONArray("sockets");
+                        ListView socketListView = (ListView) findViewById(R.id.socket_list_view);
+                        for (int i = 0; i < socketListView.getChildCount(); i++) {
+                            TextView socketRowTextView = (TextView) socketListView.getChildAt(i).findViewById(R.id.socket_row_text_view);
+                            String index = socketRowTextView.getText().toString();
+                            for (int j = 0; j < sockets.length(); j++) {
+                                JSONObject socket = sockets.getJSONObject(j);
+                                if (index.equals(socket.getString("index"))) {
+                                    Switch sswitch = (Switch) socketListView.getChildAt(i).findViewById(R.id.sswitch);
+                                    if (sswitch.isChecked() != socket.getBoolean("state"))
+                                        sswitch.setChecked(socket.getBoolean("state"));
+                                }
+                            }
+                        }
+                    }catch (JSONException e){
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+    }
+
     public void publishMessage(String publishTopic, MqttMessage message){
         try {
             mqttClient.publish(publishTopic, message);
